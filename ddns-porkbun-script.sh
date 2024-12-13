@@ -5,7 +5,10 @@
 
 # Porkbun API URLs
 BASE_URL="https://api.porkbun.com/api/json/v3"
-GET_IP_URL="https://api.ipify.org" # Service to get your public IP
+GET_IP_URL="https://api.ipify.org"
+
+RETRIEVE_RECORD_URL="$BASE_URL/dns/retrieveByNameType/$DOMAIN/A"
+UPDATE_RECORD_URL="$BASE_URL/dns/editByNameType/$DOMAIN/A"
 
 # Function to log messages with timestamp
 log() {
@@ -19,13 +22,26 @@ get_public_ip() {
   curl -s "$GET_IP_URL"
 }
 
+# Function to retrieve the current IP for the subdomain
+get_current_ip() {
+  local subdomain=$1
+  response=$(curl -s "$RETRIEVE_RECORD_URL/$subdomain")
+  response=$(curl -s -X POST "$RETRIEVE_RECORD_URL/$subdomain" \
+    -H "Content-Type: application/json" \
+    -d "{\"apikey\":\"$API_KEY\",\"secretapikey\":\"$SECRET_API_KEY\"}")
+  # Extract the current IP from the response JSON
+  current_ip=$(echo "$response" | jq -r '.records[0].content')
+  echo "$current_ip"
+}
+
 # Function to update the DDNS record
 update_ddns_record() {
   local subdomain=$1
   local ip=$2
-  curl -s -X POST "$BASE_URL/dns/editByNameType/$DOMAIN/A/$subdomain" \
+  response=$(curl -s -X POST "$UPDATE_RECORD_URL/$subdomain" \
     -H "Content-Type: application/json" \
-    -d "{\"apikey\":\"$API_KEY\",\"secretapikey\":\"$SECRET_API_KEY\",\"content\":\"$ip\"}"
+    -d "{\"apikey\":\"$API_KEY\",\"secretapikey\":\"$SECRET_API_KEY\",\"content\":\"$ip\"}")
+  echo "$response"
 }
 
 # Main
@@ -45,14 +61,25 @@ log "INFO" "Current public IP: $public_ip"
 for subdomain in "${SUBDOMAINS[@]}"; do
   log "INFO" "Processing subdomain: $subdomain"
 
-  log "INFO" "Updating DDNS record for $subdomain.$DOMAIN to IP: $public_ip..."
-  response=$(update_ddns_record "$subdomain" "$public_ip")
+  # Get the current IP for the subdomain
+  current_ip=$(get_current_ip "$subdomain")
 
-  if [ "$response" == "{"status":"SUCCESS"}" ]; then
-    log "INFO" "Record successfully updated for $subdomain to $public_ip"
+  log "INFO" "Current IP for $subdomain: $current_ip"
+
+  # Check if the current IP is the same as the public IP
+  if [ "$current_ip" != "$public_ip" ]; then
+    log "INFO" "IP has changed for $subdomain. Updating record..."
+    response=$(update_ddns_record "$subdomain" "$public_ip")
+
+    # Check if the update was successful
+    if [[ "$response" == "SUCCESS" ]]; then
+      log "INFO" "Record successfully updated for $subdomain to $public_ip"
+    else
+      log "ERROR" "Error updating record for $subdomain: $response"
+    fi
   else
-    log "ERROR" "Error updating record for $subdomain: $response"
+    log "INFO" "No change in IP for $subdomain. Skipping update."
   fi
 done
 
-log "INFO" "Sleeping for $UPDATE_INTERVAL seconds before next check..."
+log "INFO" "Finish DDNS update script"
