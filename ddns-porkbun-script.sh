@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Load keys
-source ./data.env
+source ./keys.env
 
 # Load JSON
 DATA_FILE="data.json"
@@ -16,11 +16,17 @@ RETRIEVE_RECORD_URL="$BASE_URL/dns/retrieveByNameType/$DOMAIN/A"
 UPDATE_RECORD_URL="$BASE_URL/dns/editByNameType/$DOMAIN/A"
 
 # Function to log messages with timestamp
-LOG_FILE="/var/log/ddns-porkbun.log"
 log() {
   local level=$1
   local message=$2
-  echo "$(date '+%Y-%m-%d %H:%M:%S') [$level] $message" >> "$LOG_FILE"
+  case "$level" in
+    DEBUG)    syslog_level="debug" ;;
+    INFO)     syslog_level="info" ;;
+    WARNING)  syslog_level="warning" ;;
+    ERROR)    syslog_level="err" ;;
+    *)        syslog_level="notice" ;; # Nivel por defecto
+  esac
+  logger -p user.$syslog_level -t ddns-porkbun "$message"
 }
 
 # Function to get the public IP

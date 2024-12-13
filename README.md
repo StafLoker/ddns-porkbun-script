@@ -87,6 +87,12 @@ Verify that the DNS records on Porkbun are updated to match your current public 
 
 ---
 
+## **Logging**
+Check logs
+```bash
+journalctl -t ddns-porkbun
+```
+
 ## **License**
 
 This project is released under the MIT License. See the [LICENSE](LICENSE) file for more details.
