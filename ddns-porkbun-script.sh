@@ -1,7 +1,12 @@
 #!/bin/bash
 
-# Configuration
+# Load keys
+source ./data.env
 
+# Load JSON
+DATA_FILE="data.json"
+DOMAIN=$(jq -r '.domain' "$DATA_FILE")
+SUBDOMAINS=$(jq -r '.subdomains[]' "$DATA_FILE")
 
 # Porkbun API URLs
 BASE_URL="https://api.porkbun.com/api/json/v3"
@@ -11,10 +16,11 @@ RETRIEVE_RECORD_URL="$BASE_URL/dns/retrieveByNameType/$DOMAIN/A"
 UPDATE_RECORD_URL="$BASE_URL/dns/editByNameType/$DOMAIN/A"
 
 # Function to log messages with timestamp
+LOG_FILE="/var/log/ddns-porkbun.log"
 log() {
   local level=$1
   local message=$2
-  echo "$(date '+%Y-%m-%d %H:%M:%S') [$level] $message"
+  echo "$(date '+%Y-%m-%d %H:%M:%S') [$level] $message" >> "$LOG_FILE"
 }
 
 # Function to get the public IP
@@ -28,7 +34,7 @@ get_current_ip() {
   response=$(curl -s "$RETRIEVE_RECORD_URL/$subdomain")
   response=$(curl -s -X POST "$RETRIEVE_RECORD_URL/$subdomain" \
     -H "Content-Type: application/json" \
-    -d "{\"apikey\":\"$API_KEY\",\"secretapikey\":\"$SECRET_API_KEY\"}")
+    -d "{\"apikey\":\"$PORKBUN_API_KEY\",\"secretapikey\":\"$PORKBUN_SECRET_API_KEY\"}")
   # Extract the current IP from the response JSON
   current_ip=$(echo "$response" | jq -r '.records[0].content')
   echo "$current_ip"
@@ -40,8 +46,11 @@ update_ddns_record() {
   local ip=$2
   response=$(curl -s -X POST "$UPDATE_RECORD_URL/$subdomain" \
     -H "Content-Type: application/json" \
-    -d "{\"apikey\":\"$API_KEY\",\"secretapikey\":\"$SECRET_API_KEY\",\"content\":\"$ip\"}")
-  echo "$response"
+    -d "{\"apikey\":\"$PORKBUN_API_KEY\",\"secretapikey\":\"$PORKBUN_SECRET_API_KEY\",\"content\":\"$ip\"}")
+  
+  # Extract only the status value from the response
+  status=$(echo "$response" | jq -r '.status')
+  echo "$status"
 }
 
 # Main
@@ -58,7 +67,7 @@ fi
 
 log "INFO" "Current public IP: $public_ip"
 
-for subdomain in "${SUBDOMAINS[@]}"; do
+for subdomain in $SUBDOMAINS; do
   log "INFO" "Processing subdomain: $subdomain"
 
   # Get the current IP for the subdomain
