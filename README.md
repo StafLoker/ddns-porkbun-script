@@ -25,7 +25,7 @@ This script allows you to automatically update DNS records for your domain/subdo
    ```
 
 3. **Configure your domain and subdomains:**  
-   Update the `data.json` file to include your domain and subdomains. Example format:
+   Create the `data.json` file to include your domain and subdomains. Example format:
    ```json
    {
        "domain": "example.com",
@@ -66,6 +66,22 @@ To automate the script, use `cron` to schedule periodic and system startup execu
    ```
 
 3. **Save and exit the crontab editor.**
+
+4. **Updating `ddns-porkbun-script.sh` for Cron Compatibility**
+   Here is the updated snippet of the `ddns-porkbun-script.sh` file:
+   ```bash
+   # Load keys
+   source /absolute/path/to/keys.env
+
+   # Load JSON
+   DATA_FILE="/absolute/path/to/data.json"
+   ```
+   Verifying:
+   1. Edit your Cron job to point to the updated `ddns-porkbun-script.sh` file.
+   2. Execute the script manually to confirm it works without errors:
+      ```bash
+      /absolute/path/to/ddns-porkbun-script.sh
+      ```
 
 ---
 
