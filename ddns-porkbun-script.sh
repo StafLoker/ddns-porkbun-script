@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Load keys
-source ./keys.env
+source keys.env
 
 # Load JSON
 DATA_FILE="data.json"
@@ -20,11 +20,11 @@ log() {
   local level=$1
   local message=$2
   case "$level" in
-    DEBUG)    syslog_level="debug" ;;
-    INFO)     syslog_level="info" ;;
-    WARNING)  syslog_level="warning" ;;
-    ERROR)    syslog_level="err" ;;
-    *)        syslog_level="notice" ;; # Nivel por defecto
+  DEBUG) syslog_level="debug" ;;
+  INFO) syslog_level="info" ;;
+  WARNING) syslog_level="warning" ;;
+  ERROR) syslog_level="err" ;;
+  *) syslog_level="notice" ;; # Nivel por defecto
   esac
   logger -p user.$syslog_level -t ddns-porkbun "$message"
 }
@@ -53,7 +53,7 @@ update_ddns_record() {
   response=$(curl -s -X POST "$UPDATE_RECORD_URL/$subdomain" \
     -H "Content-Type: application/json" \
     -d "{\"apikey\":\"$PORKBUN_API_KEY\",\"secretapikey\":\"$PORKBUN_SECRET_API_KEY\",\"content\":\"$ip\"}")
-  
+
   # Extract only the status value from the response
   status=$(echo "$response" | jq -r '.status')
   echo "$status"
@@ -81,19 +81,24 @@ for subdomain in $SUBDOMAINS; do
 
   log "INFO" "Current IP for $subdomain: $current_ip"
 
-  # Check if the current IP is the same as the public IP
-  if [ "$current_ip" != "$public_ip" ]; then
-    log "INFO" "IP has changed for $subdomain. Updating record..."
-    response=$(update_ddns_record "$subdomain" "$public_ip")
+  # Check if the current IP of subdomain is not null or blank
+  if [[ "$current_ip" != "null" && "$current_ip" != "" ]]; then
+    # Check if the current IP is different from the public IP
+    if [[ "$current_ip" != "$public_ip" ]]; then
+      log "INFO" "IP has changed for $subdomain. Updating record..."
+      response=$(update_ddns_record "$subdomain" "$public_ip")
 
-    # Check if the update was successful
-    if [[ "$response" == "SUCCESS" ]]; then
-      log "INFO" "Record successfully updated for $subdomain to $public_ip"
+      # Check if the update was successful
+      if [[ "$response" == "SUCCESS" ]]; then
+        log "INFO" "Record successfully updated for $subdomain to $public_ip"
+      else
+        log "ERROR" "Error updating record for $subdomain: $response"
+      fi
     else
-      log "ERROR" "Error updating record for $subdomain: $response"
+      log "INFO" "No change in IP for $subdomain. Skipping update."
     fi
   else
-    log "INFO" "No change in IP for $subdomain. Skipping update."
+    log "ERROR" "Current IP is null or blank for $subdomain. Cannot proceed with update."
   fi
 done
 
