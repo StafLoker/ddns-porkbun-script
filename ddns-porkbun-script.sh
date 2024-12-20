@@ -30,9 +30,9 @@ readonly UPDATE_RECORD_URL="$BASE_URL/dns/editByNameType/$DOMAIN/A"
 log() {
   local level=$1 message=$2
   case "$level" in
-    DEBUG) syslog_level="debug";; INFO) syslog_level="info";;
-    WARNING) syslog_level="warning";; ERROR) syslog_level="err";;
-    *) syslog_level="notice";; # Default level
+  DEBUG) syslog_level="debug" ;; INFO) syslog_level="info" ;;
+  WARNING) syslog_level="warning" ;; ERROR) syslog_level="err" ;;
+  *) syslog_level="notice" ;; # Default level
   esac
   logger -p user.$syslog_level -t ddns-porkbun "$message"
 }
@@ -62,8 +62,7 @@ update_ddns_record() {
 
 # Function to handle subdomain update if needed
 update_subdomain_if_needed() {
-  local subdomain=$1
-  local public_ip=$2
+  local subdomain=$1 public_ip=$2
 
   log "INFO" "Checking subdomain: $subdomain"
   current_ip=$(get_current_ip "$subdomain") || {
@@ -98,12 +97,17 @@ main() {
   }
   log "INFO" "Public IP retrieved: $public_ip"
 
+  # Handle each subdomain in parallel
   for subdomain in $SUBDOMAINS; do
-    update_subdomain_if_needed "$subdomain" "$public_ip" || {
-      log "ERROR" "Error processing subdomain $subdomain"
-    }
+    (
+      update_subdomain_if_needed "$subdomain" "$public_ip" || {
+        log "ERROR" "Error processing subdomain $subdomain"
+      }
+    ) &
   done
-  log "INFO" "Process completed."
+
+  wait
+  log "INFO" "All subdomains processed. Script completed."
 }
 
 # Entry point
