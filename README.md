@@ -29,6 +29,7 @@ This script allows you to automatically update DNS records for your domain/subdo
    ```json
    {
        "domain": "example.com",
+       "concurrency": true,
        "subdomains": [
            "sub1",
            "sub2"

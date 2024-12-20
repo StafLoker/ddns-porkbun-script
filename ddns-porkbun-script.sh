@@ -28,7 +28,7 @@ readonly GET_IP_URL="https://api.ipify.org"
 readonly RETRIEVE_RECORD_URL="$BASE_URL/dns/retrieveByNameType/$DOMAIN/A"
 readonly UPDATE_RECORD_URL="$BASE_URL/dns/editByNameType/$DOMAIN/A"
 
-# Function to log messages with timestamp
+# Function to log messages
 log() {
   local level=$1 message=$2
   case "$level" in
