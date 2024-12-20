@@ -47,7 +47,7 @@ get_public_ip() {
 # Function to retrieve the current IP for a subdomain
 get_current_ip() {
   local subdomain=$1
-  response=$(curl -s "$RETRIEVE_RECORD_URL/$subdomain" \
+  response=$(curl -s -X POST "$RETRIEVE_RECORD_URL/$subdomain" \
     -H "Content-Type: application/json" \
     -d "{\"apikey\":\"$PORKBUN_API_KEY\",\"secretapikey\":\"$PORKBUN_SECRET_API_KEY\"}")
   echo "$response" | jq -r '.records[0].content' || return 2
@@ -100,7 +100,6 @@ main() {
   log "INFO" "Public IP retrieved: $public_ip"
 
   if [[ "$CONCURRENCY" == "true" ]]; then
-    log "INFO" "Concurrency enabled. Processing subdomains in parallel."
     # Handle each subdomain in parallel
     for subdomain in $SUBDOMAINS; do
       (
@@ -111,7 +110,6 @@ main() {
     done
     wait # Wait for all background tasks to finish
   else
-    log "INFO" "Concurrency disabled. Processing subdomains sequentially."
     # Handle each subdomain sequentially
     for subdomain in $SUBDOMAINS; do
       update_subdomain_if_needed "$subdomain" "$public_ip" || {
