@@ -2,7 +2,23 @@
 
 This script allows you to automatically update DNS records for your domain/subdomains on Porkbun using their API. It ensures your records are always in sync with your current public IP.
 
-## **Prerequisites**
+## **Install & Upgrade**
+
+```bash
+bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh")
+```
+
+## **Install legacy Version (we don't recommend)**
+
+To install your desired version, use following installation command. e.g., ver `v1.0.1`:
+
+```bash
+VERSION=v1.0.1 && bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/$VERSION/install.sh") $VERSION
+```
+
+## **Manual Install**
+
+### **Prerequisites**
 
 1. **Install `jq`:**  
    `jq` is a lightweight and flexible command-line JSON processor, required to parse API responses.
@@ -107,7 +123,7 @@ Verify that the DNS records on Porkbun are updated to match your current public 
 ## **Logging**
 Check logs
 ```bash
-journalctl -t ddns-porkbun
+journalctl -t ddns-porkbun | tail
 ```
 
 ## **License**
