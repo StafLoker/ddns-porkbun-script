@@ -3,10 +3,7 @@
 # Load keys
 source keys.env
 
-# Load JSON data file
 readonly DATA_FILE="data.json"
-readonly DOMAIN=$(jq -r '.domain' "$DATA_FILE")
-readonly SUBDOMAINS=$(jq -r '.subdomains[]' "$DATA_FILE")
 
 # Check if API keys are set
 if [[ -z "$PORKBUN_API_KEY" || -z "$PORKBUN_SECRET_API_KEY" ]]; then
@@ -19,6 +16,11 @@ if [[ ! -f "$DATA_FILE" ]]; then
   echo "ERROR: Data file $DATA_FILE not found. Exiting."
   exit 1
 fi
+
+# Load JSON data file
+readonly DOMAIN=$(jq -r '.domain' "$DATA_FILE")
+readonly CONCURRENCY=$(jq -r '.concurrency' "$DATA_FILE")
+readonly SUBDOMAINS=$(jq -r '.subdomains[]' "$DATA_FILE")
 
 # Porkbun API URLs
 readonly BASE_URL="https://api.porkbun.com/api/json/v3"
@@ -97,16 +99,27 @@ main() {
   }
   log "INFO" "Public IP retrieved: $public_ip"
 
-  # Handle each subdomain in parallel
-  for subdomain in $SUBDOMAINS; do
-    (
+  if [[ "$CONCURRENCY" == "true" ]]; then
+    log "INFO" "Concurrency enabled. Processing subdomains in parallel."
+    # Handle each subdomain in parallel
+    for subdomain in $SUBDOMAINS; do
+      (
+        update_subdomain_if_needed "$subdomain" "$public_ip" || {
+          log "ERROR" "Error processing subdomain $subdomain"
+        }
+      ) &
+    done
+    wait # Wait for all background tasks to finish
+  else
+    log "INFO" "Concurrency disabled. Processing subdomains sequentially."
+    # Handle each subdomain sequentially
+    for subdomain in $SUBDOMAINS; do
       update_subdomain_if_needed "$subdomain" "$public_ip" || {
         log "ERROR" "Error processing subdomain $subdomain"
       }
-    ) &
-  done
+    done
+  fi
 
-  wait
   log "INFO" "All subdomains processed. Script completed."
 }
 
