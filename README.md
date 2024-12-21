@@ -10,10 +10,10 @@ bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script
 
 ## **Install legacy Version (we don't recommend)**
 
-To install your desired version, use following installation command. e.g., ver `v1.0.1`:
+To install your desired version, use following installation command. e.g., version `v1.0.1`:
 
 ```bash
-VERSION=v1.0.1 && bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/$VERSION/install.sh") $VERSION
+VERSION=v1.0.1 && bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh") $VERSION
 ```
 
 ## **Manual Install**
