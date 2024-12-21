@@ -63,6 +63,10 @@ log_info "Extracting the downloaded tar.gz file..."
 tar -xzvf "${install_dir}/ddns-porkbun-script-${VERSION}.tar.gz" -C "$install_dir"
 rm -f "${install_dir}/ddns-porkbun-script-${VERSION}.tar.gz"
 
+# Move the extracted files to the correct location
+mv "${install_dir}/ddns-porkbun-script-${VERSION}"/* "$install_dir/"
+rmdir "${install_dir}/ddns-porkbun-script-${VERSION}"
+
 log_info "Removing unwanted files (.git, .gitignore)..."
 # Remove .git and .gitignore if they exist in the install directory
 rm -rf "${install_dir}/.git" "${install_dir}/.gitignore"
