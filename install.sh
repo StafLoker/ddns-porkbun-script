@@ -48,7 +48,7 @@ else
 fi
 
 # Download the specific version's tar.gz file
-url="https://github.com/StafLoker/ddns-porkbun-script/releases/download/${VERSION}/ddns-porkbun-script-${VERSION}.tar.gz"
+url="https://github.com/StafLoker/ddns-porkbun-script/archive/refs/tags/${VERSION}.tar.gz"
 log_info "Downloading version ${VERSION} from $url"
 wget -N --no-check-certificate -O "${install_dir}/ddns-porkbun-script-${VERSION}.tar.gz" ${url}
 
