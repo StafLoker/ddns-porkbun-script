@@ -27,17 +27,41 @@ log_warning() {
     echo -e "${PURPLE}[WARNING] $1${RESET}"
 }
 
+# Function to validate input version number format
+validate_version() {
+    if [[ $1 =~ ^[v]?[0-9]+(\.[0-9]+)*$ ]]; then
+        return 0 # Valid version format
+    else
+        return 1 # Invalid version format
+    fi
+}
+
+# Function to check if GitHub has the specified version
+check_github_version() {
+    local tag=$(curl -sL "https://api.github.com/repos/$1/$2/tags" | grep -o '"name": "[^"]*"' | cut -d'"' -f4)
+    if [[ $tag == $3 ]]; then
+        return 0 # Version exists on GitHub
+    else
+        return 1 # Version does not exist on GitHub
+    fi
+}
+
 # Check if a version is provided, if not set a default version (latest)
-if [ -z "$1" ]; then
+if [ -z "$VERSION" ]; then
     log_info "No version provided. Installing the latest release."
     VERSION=$(curl -Ls "https://api.github.com/repos/StafLoker/ddns-porkbun-script/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 else
-    VERSION=$1
-fi
-
-if [ -z "$VERSION" ]; then
-    log_error "Failed to determine the version. Exiting."
-    exit 1
+    if validate_version "$VERSION"; then
+        if check_github_version "StafLoker" "ddns-porkbun-script" "${VERSION}"; then
+            log_success "Version $VERSION exists on GitHub. Proceeding with installation."
+        else
+            log_error "Version $VERSION does not exist on GitHub. Exiting."
+            exit 1
+        fi
+    else
+        log_error "Invalid version format. Please provide a valid version number. Exiting."
+        exit 1
+    fi
 fi
 
 log_success "Installing ddns-porkbun-script version $VERSION..."
@@ -54,7 +78,7 @@ fi
 # Download the specific version's tar.gz file
 url="https://github.com/StafLoker/ddns-porkbun-script/archive/refs/tags/${VERSION}.tar.gz"
 log_info "Downloading version ${VERSION} from $url"
-wget --no-check-certificate -P "${install_dir}" "${url}"
+wget --progress=dot:giga --no-check-certificate -P "${install_dir}" "${url}"
 
 # Check if the download was successful
 if [[ $? -ne 0 ]]; then
