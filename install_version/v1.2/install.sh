@@ -28,7 +28,7 @@ log_warning() {
 }
 
 if [ -z "$VERSION" ]; then
-    echo "[ERROR] Version not provided. Exiting."
+    log_error "Version not provided. Exiting."
     exit 1
 fi
 
