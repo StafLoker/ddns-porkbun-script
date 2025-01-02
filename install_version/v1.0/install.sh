@@ -86,13 +86,6 @@ if [ ! -f "${install_dir}/data.json" ]; then
 
     read -p "Enter your domain (e.g., example.com): " domain
 
-    read -p "Do you want to enable concurrency? (yes/no): " concurrency
-    if [ "$concurrency" = "yes" ]; then
-        concurrency_value="true"
-    else
-        concurrency_value="false"
-    fi
-
     log_info "Enter your subdomains one by one. Type '0' when you are finished."
     subdomains_list=()
     while true; do
@@ -111,7 +104,6 @@ if [ ! -f "${install_dir}/data.json" ]; then
     cat <<EOF >"${install_dir}/data.json"
 {
     "domain": "${domain}",
-    "concurrency": ${concurrency_value},
     "subdomains": ${subdomains_json}
 }
 EOF
