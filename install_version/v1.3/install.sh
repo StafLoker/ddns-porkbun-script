@@ -31,15 +31,18 @@ check_dependencies() {
     for cmd in curl wget sed tar jq; do
         if ! command -v $cmd &>/dev/null; then
             log_error "$cmd is not installed. Please install it and try again."
-            exit 1
+            return 1
         fi
     done
+    return 0
 }
 
 main() {
     log_success "Installing ddns-porkbun-script version $VERSION..."
 
-    check_dependencies
+    if ! check_dependencies; then
+        exit 1
+    fi
 
     # Define the installation directory as the 'ddns-porkbun-script' folder in the user's home directory
     install_dir="$HOME/ddns-porkbun-script"
