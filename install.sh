@@ -96,7 +96,7 @@ main() {
     fi
 
     # Truncate version to major.minor (e.g., from v1.0.1 to v1.0)
-    VERSION_TRUNCATED="${VERSION%.*.*}"
+    VERSION_TRUNCATED="${VERSION%.*}"
 
     bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install_version/$VERSION_TRUNCATED/install.sh") $VERSION
 }
