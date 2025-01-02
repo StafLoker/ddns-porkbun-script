@@ -1,5 +1,7 @@
 #!/bin/bash
 
+VERSION=$1
+
 # Color Definitions
 readonly RED='\033[31m'
 readonly YELLOW='\033[33m'
