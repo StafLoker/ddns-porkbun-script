@@ -38,6 +38,11 @@ check_dependencies() {
 }
 
 main() {
+    if [ -z "$VERSION" ]; then
+        echo "[ERROR] Version not provided. Exiting."
+        exit 1
+    fi
+    
     log_success "Installing ddns-porkbun-script version $VERSION..."
 
     if ! check_dependencies; then

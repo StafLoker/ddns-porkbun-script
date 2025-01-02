@@ -27,6 +27,11 @@ log_warning() {
     echo -e "${PURPLE}[WARNING] $1${RESET}"
 }
 
+if [ -z "$VERSION" ]; then
+    echo "[ERROR] Version not provided. Exiting."
+    exit 1
+fi
+
 log_success "Installing ddns-porkbun-script version $VERSION..."
 
 # Define the installation directory as the 'ddns-porkbun-script' folder in the user's home directory
