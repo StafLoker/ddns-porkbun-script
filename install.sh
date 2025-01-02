@@ -55,25 +55,25 @@ check_github_version() {
     fi
 }
 
-# Check if a version is provided, if not set a default version (latest)
-if [ -z "$VERSION" ]; then
-    log_info "No version provided. Installing the latest release."
-    VERSION=$(curl -Ls "https://api.github.com/repos/StafLoker/ddns-porkbun-script/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-else
-    if validate_version "$VERSION"; then
-        if check_github_version "StafLoker" "ddns-porkbun-script" "${VERSION}"; then
-            log_success "Version $VERSION exists on GitHub. Proceeding with installation."
+main() {
+    # Check if a version is provided, if not set a default version (latest)
+    if [ -z "$VERSION" ]; then
+        log_info "No version provided. Installing the latest release."
+        VERSION=$(curl -Ls "https://api.github.com/repos/StafLoker/ddns-porkbun-script/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    else
+        if validate_version "$VERSION"; then
+            if check_github_version "StafLoker" "ddns-porkbun-script" "${VERSION}"; then
+                log_success "Version $VERSION exists on GitHub. Proceeding with installation."
+            else
+                log_error "Version $VERSION does not exist on GitHub. Exiting."
+                exit 1
+            fi
         else
-            log_error "Version $VERSION does not exist on GitHub. Exiting."
+            log_error "Invalid version format. Please provide a valid version number. Exiting."
             exit 1
         fi
-    else
-        log_error "Invalid version format. Please provide a valid version number. Exiting."
-        exit 1
     fi
-fi
 
-main() {
     log_success "Installing ddns-porkbun-script version $VERSION..."
 
     check_dependencies
