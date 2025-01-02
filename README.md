@@ -1,6 +1,6 @@
 # **DDNS Porkbun Script**
 
-This script allows you to automatically update DNS records for your domain/subdomains on Porkbun using their API. It ensures your records are always in sync with your current public IP.
+This script allows you to automatically update DNS records for your domain/subdomains on Porkbun using their API. It ensures your records are always in sync with your current public IP (only IPv4).
 
 ## **Install & Upgrade**
 
