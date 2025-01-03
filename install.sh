@@ -1,5 +1,7 @@
 #!/bin/bash
 
+VERSION=$1
+
 # Color Definitions
 readonly RED='\033[31m'
 readonly YELLOW='\033[33m'
@@ -8,7 +10,7 @@ readonly PURPLE='\033[36m'
 readonly RESET='\033[0m'
 
 # Consts
-readonly FORBIDDEN_VERSIONS=("v1.0.0")
+readonly FORBIDDEN_VERSIONS=("1.0.0")
 
 # Function to print INFO messages
 log_info() {
@@ -40,22 +42,27 @@ validate_version() {
 }
 
 is_forbidden_version() {
-    local version=$1
+    local version=${1#v}
     for forbidden_version in "${FORBIDDEN_VERSIONS[@]}"; do
         if [[ "$version" == "$forbidden_version" ]]; then
-            return 1
+            return 0
         fi
     done
-    return 0
+    return 1
 }
 
 check_github_version() {
-    local tag=$(curl -sL "https://api.github.com/repos/$1/$2/tags" | grep -o '"name": "[^"]*"' | cut -d'"' -f4)
-    if [[ $tag == $3 ]]; then
-        return 0 # Version exists on GitHub
-    else
-        return 1 # Version does not exist on GitHub
-    fi
+    local repo_owner="$1"
+    local repo_name="$2"
+    local version="$3"
+    
+    local tags=$(curl -sL "https://api.github.com/repos/${repo_owner}/${repo_name}/tags" | grep -o '"name": "[^"]*"' | cut -d'"' -f4)
+    for tag in $tags; do
+        if [[ "$tag" == "$version" ]]; then
+            return 0 # Version exists on GitHub
+        fi
+    done
+    return 1 # Version does not exist on GitHub
 }
 
 check_dependencies() {
