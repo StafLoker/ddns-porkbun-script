@@ -153,8 +153,10 @@ main() {
         log_info "- Creating keys.env file..."
         read -p "Enter your Porkbun API key: " api_key
         read -p "Enter your Porkbun secret API key: " secret_api_key
-        sudo echo "PORKBUN_API_KEY=\"${api_key}\"" >"${install_dir}/keys.env"
-        sudo echo "PORKBUN_SECRET_API_KEY=\"${secret_api_key}\"" >>"${install_dir}/keys.env"
+        sudo bash -c "cat > ${install_dir}/keys.env <<EOF
+PORKBUN_API_KEY=\"${api_key}\"
+PORKBUN_SECRET_API_KEY=\"${secret_api_key}\"
+EOF"
         sudo chmod 600 "${install_dir}/keys.env"
     else
         log_success "keys.env file already exists."
@@ -221,7 +223,7 @@ main() {
         subdomains_type_aaaa_json=$(printf '"%s",' "${subdomains_type_aaaa_list[@]}")
         subdomains_type_aaaa_json="[${subdomains_type_aaaa_json%,}]"
 
-        sudo cat <<EOF >"${install_dir}/data.json"
+        sudo bash -c "cat > ${install_dir}/data.json <<EOF
 {
     "domain": "${domain}",
     "concurrency": ${concurrency_value},
@@ -230,7 +232,7 @@ main() {
     "ipv6": ${ipv6_value},
     "subdomains_type_aaaa": ${subdomains_type_aaaa_json}
 }
-EOF
+EOF"
 
     else
         log_success "data.json file already exists."
