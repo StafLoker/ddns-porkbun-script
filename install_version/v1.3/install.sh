@@ -153,8 +153,8 @@ main() {
         log_info "- Creating keys.env file..."
         read -p "Enter your Porkbun API key: " api_key
         read -p "Enter your Porkbun secret API key: " secret_api_key
-        echo "PORKBUN_API_KEY=\"${api_key}\"" >"${install_dir}/keys.env"
-        echo "PORKBUN_SECRET_API_KEY=\"${secret_api_key}\"" >>"${install_dir}/keys.env"
+        sudo echo "PORKBUN_API_KEY=\"${api_key}\"" >"${install_dir}/keys.env"
+        sudo echo "PORKBUN_SECRET_API_KEY=\"${secret_api_key}\"" >>"${install_dir}/keys.env"
         sudo chmod 600 "${install_dir}/keys.env"
     else
         log_success "keys.env file already exists."
