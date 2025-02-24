@@ -42,7 +42,7 @@ check_dependencies() {
 create_system_user() {
     log_info "Creating system user 'ddns-system'..."
     if ! id "ddns-system" &>/dev/null; then
-        sudo useradd -r -d $1 ddns-system
+        sudo useradd -r -d $1 -c "User for the DDNS Porkbun script" ddns-system
         sudo chown -R ddns-system:ddns-system "$1"
         log_success "User 'ddns-system' created successfully."
     else
