@@ -112,15 +112,15 @@ main() {
     # Create the directory if it doesn't exist
     if [ ! -d "$install_dir" ]; then
         log_info "Creating directory: $install_dir"
-        mkdir -p "$install_dir"
+        sudo mkdir -p "$install_dir"
     fi
 
     # Download the specific version's tar.gz file
     url="https://github.com/StafLoker/ddns-porkbun-script/archive/refs/tags/${VERSION}.tar.gz"
     log_info "Downloading version ${VERSION} from $url"
-    wget --progress=dot:giga --no-check-certificate -P "${install_dir}" "${url}" || {
+    sudo wget --progress=dot:giga --no-check-certificate -P "${install_dir}" "${url}" || {
         log_error "Download failed. Retrying..."
-        wget --progress=dot:giga --no-check-certificate -P "${install_dir}" "${url}" || exit 1
+        sudo wget --progress=dot:giga --no-check-certificate -P "${install_dir}" "${url}" || exit 1
     }
 
     # Check if the download was successful
@@ -131,14 +131,14 @@ main() {
 
     log_info "Extracting the downloaded tar.gz file..."
     # Extract the downloaded tar.gz file into the installation directory
-    tar -xzvf "${install_dir}/${VERSION}.tar.gz" -C "$install_dir"
-    rm -f "${install_dir}/${VERSION}.tar.gz"
+    sudo tar -xzvf "${install_dir}/${VERSION}.tar.gz" -C "$install_dir"
+    sudo rm -f "${install_dir}/${VERSION}.tar.gz"
 
     # Move the extracted files to the correct location
     if [ -f "${install_dir}/ddns-porkbun-script-${VERSION#v}/ddns-porkbun-script.sh" ] &&
         [ -f "${install_dir}/ddns-porkbun-script-${VERSION#v}/LICENSE" ] &&
         [ -f "${install_dir}/ddns-porkbun-script-${VERSION#v}/README.md" ]; then
-        mv "${install_dir}/ddns-porkbun-script-${VERSION#v}/ddns-porkbun-script.sh" \
+        sudo mv "${install_dir}/ddns-porkbun-script-${VERSION#v}/ddns-porkbun-script.sh" \
             "${install_dir}/ddns-porkbun-script-${VERSION#v}/LICENSE" \
             "${install_dir}/ddns-porkbun-script-${VERSION#v}/README.md" \
             "$install_dir/"
@@ -146,7 +146,7 @@ main() {
         log_error "One or more files are missing in the source directory."
         exit 1
     fi
-    rm -rf "${install_dir}/ddns-porkbun-script-${VERSION#v}"
+    sudo rm -rf "${install_dir}/ddns-porkbun-script-${VERSION#v}"
 
     log_info "Checking for keys.env file..."
     if [ ! -f "${install_dir}/keys.env" ]; then
@@ -155,7 +155,7 @@ main() {
         read -p "Enter your Porkbun secret API key: " secret_api_key
         echo "PORKBUN_API_KEY=\"${api_key}\"" >"${install_dir}/keys.env"
         echo "PORKBUN_SECRET_API_KEY=\"${secret_api_key}\"" >>"${install_dir}/keys.env"
-        chmod 600 "${install_dir}/keys.env"
+        sudo chmod 600 "${install_dir}/keys.env"
     else
         log_success "keys.env file already exists."
     fi
@@ -221,7 +221,7 @@ main() {
         subdomains_type_aaaa_json=$(printf '"%s",' "${subdomains_type_aaaa_list[@]}")
         subdomains_type_aaaa_json="[${subdomains_type_aaaa_json%,}]"
 
-        cat <<EOF >"${install_dir}/data.json"
+        sudo cat <<EOF >"${install_dir}/data.json"
 {
     "domain": "${domain}",
     "concurrency": ${concurrency_value},
@@ -240,16 +240,16 @@ EOF
     log_info "Updating ddns-porkbun-script.sh to use absolute paths for keys.env and data.json"
 
     # Update the keys.env source line to use the absolute path
-    sed -i "s|source keys.env|source $install_dir/keys.env|" "${install_dir}/ddns-porkbun-script.sh"
+    sudo sed -i "s|source keys.env|source $install_dir/keys.env|" "${install_dir}/ddns-porkbun-script.sh"
 
     # Update the DATA_FILE absolute path in ddns-porkbun-script.sh
-    sed -i "s|readonly DATA_FILE=\"data.json\"|readonly DATA_FILE=\"$install_dir/data.json\"|" "${install_dir}/ddns-porkbun-script.sh"
+    sudo sed -i "s|readonly DATA_FILE=\"data.json\"|readonly DATA_FILE=\"$install_dir/data.json\"|" "${install_dir}/ddns-porkbun-script.sh"
 
     log_success "ddns-porkbun-script.sh has been updated to use absolute paths for keys.env and data.json."
 
     log_info "Making the main script executable..."
     # Make the main script executable
-    chmod +x "${install_dir}/ddns-porkbun-script.sh"
+    sudo chmod +x "${install_dir}/ddns-porkbun-script.sh"
 
     create_system_user $install_dir
     setup_systemd_timer $install_dir
