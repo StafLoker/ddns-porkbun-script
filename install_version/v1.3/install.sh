@@ -39,6 +39,61 @@ check_dependencies() {
     return 0
 }
 
+create_system_user() {
+    log_info "Creating system user 'ddns-system'..."
+    if ! id "ddns-system" &>/dev/null; then
+        sudo useradd -r -d $1 ddns-system
+        sudo chown -R ddns-system:ddns-system "$1"
+        log_success "User 'ddns-system' created successfully."
+    else
+        log_warning "User 'ddns-system' already exists."
+    fi
+}
+
+setup_systemd_timer() {
+    read -p "Do you want to create a systemd timer for this script? (yes/no): " create_timer
+    if [[ "$create_timer" != "yes" ]]; then
+        return
+    fi
+
+    read -p "Enter the execution interval (e.g., '15min' or '1h'): " timer_interval
+
+    systemd_service="/etc/systemd/system/ddns-porkbun.service"
+    systemd_timer="/etc/systemd/system/ddns-porkbun.timer"
+
+    log_info "Creating systemd service and timer..."
+
+    sudo bash -c "cat > $systemd_service <<EOF
+[Unit]
+Description=DDNS Porkbun Update Service
+After=network.target
+
+[Service]
+User=ddns-system
+ExecStart=$1/ddns-porkbun-script.sh
+
+[Install]
+WantedBy=multi-user.target
+EOF"
+
+    sudo bash -c "cat > $systemd_timer <<EOF
+[Unit]
+Description=Run DDNS Porkbun script every $timer_interval
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=$timer_interval
+Unit=ddns-porkbun.service
+
+[Install]
+WantedBy=timers.target
+EOF"
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now ddns-porkbun.timer
+    log_success "Systemd timer set to run every $timer_interval."
+}
+
 main() {
     if [ -z "$VERSION" ]; then
         log_error "Version not provided. Exiting."
@@ -51,8 +106,8 @@ main() {
         exit 1
     fi
 
-    # Define the installation directory as the 'ddns-porkbun-script' folder in the user's home directory
-    install_dir="$HOME/ddns-porkbun-script"
+    # Define the installation directory as the 'ddns-porkbun-script' folder in the opt directory
+    install_dir="/opt/ddns-porkbun-script"
 
     # Create the directory if it doesn't exist
     if [ ! -d "$install_dir" ]; then
@@ -195,6 +250,9 @@ EOF
     log_info "Making the main script executable..."
     # Make the main script executable
     chmod +x "${install_dir}/ddns-porkbun-script.sh"
+
+    create_system_user $install_dir
+    setup_systemd_timer $install_dir
 
     log_success "Installation or update of ddns-porkbun-script version $VERSION completed successfully!"
 }
