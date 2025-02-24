@@ -2,32 +2,51 @@
 
 This script allows you to automatically update DNS records for your domain/subdomains on Porkbun using their API. It ensures your records are always in sync with your current public IP.
 
+---
+
 ## **Install & Upgrade**
 
 ```bash
 bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh")
 ```
 
-## **Install legacy Version (we don't recommend)**
+---
 
-To install your desired version, use following installation command. e.g., version `v1.0.1`:
+## **Install Legacy Version (Not Recommended)**
+
+To install a specific version, use the following command. For example, to install version `v1.0.1`:
 
 ```bash
 VERSION=v1.0.1 && bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh") $VERSION
 ```
 
+---
+
 ## **Manual Install**
 
 ### **Prerequisites**
 
-1. **Install `jq`:**  
+1. **Download the Project:**  
+   Clone or download the project from the GitHub repository (replace `${VERSION}` with the version of the latest release):
+
+   ```bash
+   sudo mkdir -p /opt/ddns-porkbun-script
+   cd /opt/ddns-porkbun-script
+   sudo wget https://github.com/StafLoker/ddns-porkbun-script/archive/refs/tags/${VERSION}.tar.gz
+   sudo tar -xzvf ${VERSION}.tar.gz
+   sudo rm ${VERSION}.tar.gz
+   ```
+
+   This will download the latest version of the script and extract it into the `/opt/ddns-porkbun-script` directory.
+
+2. **Install `jq`:**  
    `jq` is a lightweight and flexible command-line JSON processor, required to parse API responses.
 
    ```bash
    sudo apt install jq
    ```
 
-2. **Create `keys.env` file:**  
+3. **Create `keys.env` file:**  
    Store your API keys securely in an environment file. Replace `pk` and `sk` with your actual API and Secret API keys from Porkbun.
 
    ```bash
@@ -40,7 +59,7 @@ VERSION=v1.0.1 && bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/d
    chmod 600 keys.env
    ```
 
-3. **Configure your domain and subdomains:**  
+4. **Configure your domain and subdomains:**  
    Create the `data.json` file to include your domain and subdomains. Example format:
    ```json
    {
@@ -59,7 +78,7 @@ VERSION=v1.0.1 && bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/d
    }
    ```
 
-4. **Make the script executable:**  
+5. **Make the script executable:**  
    Ensure the script has executable permissions:
    ```bash
    chmod +x ddns-porkbun-script.sh
@@ -67,9 +86,31 @@ VERSION=v1.0.1 && bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/d
 
 ---
 
-## **Automating with Cron**
+### **Create System User**
 
-To automate the script, use `cron` to schedule periodic and system startup executions:
+For security reasons, it is recommended to run the script as a dedicated system user. Follow these steps to create the user:
+
+1. **Create the user:**  
+   Replace `/opt/ddns-porkbun-script` with your installation directory.
+
+   ```bash
+   sudo useradd -r -d /opt/ddns-porkbun-script -c "User for the DDNS Porkbun script" ddns-system
+   ```
+
+2. **Set ownership of the installation directory:**  
+   Ensure the user `ddns-system` owns the installation directory.
+
+   ```bash
+   sudo chown -R ddns-system:ddns-system /opt/ddns-porkbun-script
+   ```
+
+---
+
+### **Choose Between Cron and Systemd**
+
+You can automate the script using either `cron` or `systemd`. Below are instructions for both methods.
+
+#### **Option 1: Automating with Cron**
 
 1. **Open crontab for editing:**
    ```bash
@@ -82,29 +123,81 @@ To automate the script, use `cron` to schedule periodic and system startup execu
 
    ```bash
    # Every 1 hour
-   0 * * * * /path/to/ddns-porkbun-script.sh
+   0 * * * * /opt/ddns-porkbun-script/ddns-porkbun-script.sh
 
    # At system reboot
-   @reboot /path/to/ddns-porkbun-script.sh
+   @reboot /opt/ddns-porkbun-script/ddns-porkbun-script.sh
    ```
 
 3. **Save and exit the crontab editor.**
 
-4. **Updating `ddns-porkbun-script.sh` for Cron Compatibility**
-   Here is the updated snippet of the `ddns-porkbun-script.sh` file:
+4. **Updating `ddns-porkbun-script.sh` for Cron Compatibility**  
+   Ensure the script uses absolute paths for `keys.env` and `data.json`:
+
    ```bash
    # Load keys
-   source /absolute/path/to/keys.env
+   source /opt/ddns-porkbun-script/keys.env
 
    # Load JSON
-   DATA_FILE="/absolute/path/to/data.json"
+   DATA_FILE="/opt/ddns-porkbun-script/data.json"
    ```
-   Verifying:
-   1. Edit your Cron job to point to the updated `ddns-porkbun-script.sh` file.
-   2. Execute the script manually to confirm it works without errors:
-      ```bash
-      /absolute/path/to/ddns-porkbun-script.sh
-      ```
+
+5. **Verify the Cron job:**  
+   Execute the script manually to confirm it works without errors:
+   ```bash
+   /opt/ddns-porkbun-script/ddns-porkbun-script.sh
+   ```
+
+---
+
+#### **Option 2: Automating with Systemd**
+
+1. **Create the systemd service file:**  
+   Replace `/opt/ddns-porkbun-script` with your installation directory.
+
+   ```bash
+   sudo bash -c "cat > /etc/systemd/system/ddns-porkbun.service <<EOF
+   [Unit]
+   Description=DDNS Porkbun Update Service
+   After=network.target
+
+   [Service]
+   User=ddns-system
+   ExecStart=/opt/ddns-porkbun-script/ddns-porkbun-script.sh
+
+   [Install]
+   WantedBy=multi-user.target
+   EOF"
+   ```
+
+2. **Create the systemd timer file:**  
+   Replace `1h` with your desired execution interval (e.g., `15min`, `1h`).
+
+   ```bash
+   sudo bash -c "cat > /etc/systemd/system/ddns-porkbun.timer <<EOF
+   [Unit]
+   Description=Run DDNS Porkbun script every 1h
+
+   [Timer]
+   OnBootSec=5min
+   OnUnitActiveSec=1h
+   Unit=ddns-porkbun.service
+
+   [Install]
+   WantedBy=timers.target
+   EOF"
+   ```
+
+3. **Reload systemd and enable the timer:**
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now ddns-porkbun.timer
+   ```
+
+4. **Verify the timer is active:**
+   ```bash
+   systemctl list-timers --all
+   ```
 
 ---
 
@@ -119,7 +212,7 @@ To automate the script, use `cron` to schedule periodic and system startup execu
 
 To test the script manually, run:
 ```bash
-./ddns-porkbun-script.sh
+/opt/ddns-porkbun-script/ddns-porkbun-script.sh
 ```
 
 Verify that the DNS records on Porkbun are updated to match your current public IP.
@@ -127,10 +220,13 @@ Verify that the DNS records on Porkbun are updated to match your current public 
 ---
 
 ## **Logging**
-Check logs
+
+Check logs using `journalctl`:
 ```bash
 journalctl -t ddns-porkbun | tail
 ```
+
+---
 
 ## **License**
 

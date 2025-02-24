@@ -56,8 +56,6 @@ setup_systemd_timer() {
         return
     fi
 
-    read -p "Enter the execution interval (e.g., '15min' or '1h'): " timer_interval
-
     systemd_service="/etc/systemd/system/ddns-porkbun.service"
     systemd_timer="/etc/systemd/system/ddns-porkbun.timer"
 
@@ -80,6 +78,8 @@ setup_systemd_timer() {
             return
         fi
     fi
+
+    read -p "Enter the execution interval (e.g., '15min' or '1h'): " timer_interval
 
     log_info "Creating systemd service and timer..."
 
