@@ -61,6 +61,26 @@ setup_systemd_timer() {
     systemd_service="/etc/systemd/system/ddns-porkbun.service"
     systemd_timer="/etc/systemd/system/ddns-porkbun.timer"
 
+        # Check if the service file already exists
+    if [ -f "$systemd_service" ]; then
+        log_warning "The systemd service file '$systemd_service' already exists."
+        read -p "Do you want to overwrite it? (yes/no): " overwrite_service
+        if [[ "$overwrite_service" != "yes" ]]; then
+            log_info "Skipping creation of the systemd service file."
+            return
+        fi
+    fi
+
+    # Check if the timer file already exists
+    if [ -f "$systemd_timer" ]; then
+        log_warning "The systemd timer file '$systemd_timer' already exists."
+        read -p "Do you want to overwrite it? (yes/no): " overwrite_timer
+        if [[ "$overwrite_timer" != "yes" ]]; then
+            log_info "Skipping creation of the systemd timer file."
+            return
+        fi
+    fi
+
     log_info "Creating systemd service and timer..."
 
     sudo bash -c "cat > $systemd_service <<EOF
