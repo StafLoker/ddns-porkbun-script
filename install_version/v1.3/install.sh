@@ -243,15 +243,15 @@ EOF"
         subdomains_type_aaaa_json=$(printf '"%s",' "${subdomains_type_aaaa_list[@]}")
         subdomains_type_aaaa_json="[${subdomains_type_aaaa_json%,}]"
 
-        sudo jq -n \
-        --arg domain "$domain" \
-        --argjson concurrency "$concurrency_value" \
-        --argjson ipv4 "$ipv4_value" \
-        --argjson subdomains_a "$subdomains_type_a_json" \
-        --argjson ipv6 "$ipv6_value" \
-        --argjson subdomains_aaaa "$subdomains_type_aaaa_json" \
-        '{domain: $domain, concurrency: $concurrency, ipv4: $ipv4, subdomains_type_a: $subdomains_a, ipv6: $ipv6, subdomains_type_aaaa: $subdomains_aaaa}' \
-        > "${install_dir}/data.json"
+        sudo bash -c "jq -n \
+        --arg domain '$domain' \
+        --argjson concurrency '$concurrency_value' \
+        --argjson ipv4 '$ipv4_value' \
+        --argjson subdomains_a '$subdomains_type_a_json' \
+        --argjson ipv6 '$ipv6_value' \
+        --argjson subdomains_aaaa '$subdomains_type_aaaa_json' \
+        '{domain: \$domain, concurrency: \$concurrency, ipv4: \$ipv4, subdomains_type_a: \$subdomains_a, ipv6: \$ipv6, subdomains_type_aaaa: \$subdomains_aaaa}' \
+        > '$install_dir/data.json'"
 
     else
         log_success "data.json file already exists."
