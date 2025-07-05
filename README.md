@@ -47,21 +47,22 @@ ipv6:
 
 After installation, files are organized in standard Linux locations:
 
-| File/Directory | Location | Purpose |
-|---|---|---|
-| Configuration | `/etc/ddns-porkbun/config.yaml` | DDNS settings |
-| API Keys | `/etc/ddns-porkbun/.env` | Porkbun API credentials |
-| Scripts | `/opt/ddns-porkbun/` | Main script and documentation |
-| Logs | `/var/log/ddns-porkbun.log` | Service logs with rotation |
-| Systemd Service | `/etc/systemd/system/ddns-porkbun.service` | Service definition |
-| Systemd Timer | `/etc/systemd/system/ddns-porkbun.timer` | Scheduling |
-| Executable | `/usr/local/bin/ddns-porkbun` | Symlink to main script |
+| File/Directory  | Location                                   | Purpose                       |
+| --------------- | ------------------------------------------ | ----------------------------- |
+| Configuration   | `/etc/ddns-porkbun/config.yaml`            | DDNS settings                 |
+| API Keys        | `/etc/ddns-porkbun/.env`                   | Porkbun API credentials       |
+| Scripts         | `/opt/ddns-porkbun/`                       | Main script and documentation |
+| Logs            | `/var/log/ddns-porkbun.log`                | Service logs with rotation    |
+| Systemd Service | `/etc/systemd/system/ddns-porkbun.service` | Service definition            |
+| Systemd Timer   | `/etc/systemd/system/ddns-porkbun.timer`   | Scheduling                    |
+| Executable      | `/usr/local/bin/ddns-porkbun`              | Symlink to main script        |
 
 ---
 
 ## **Management Commands**
 
 ### **Service Management:**
+
 ```bash
 # Check service status
 sudo systemctl status ddns-porkbun.service
@@ -77,6 +78,7 @@ sudo systemctl start ddns-porkbun.service
 ```
 
 ### **Logs:**
+
 ```bash
 # View recent logs
 sudo tail -f /var/log/ddns-porkbun.log
@@ -89,6 +91,7 @@ sudo journalctl -t ddns-porkbun
 ```
 
 ### **Configuration:**
+
 ```bash
 # Edit main configuration
 sudo nano /etc/ddns-porkbun/config.yaml
@@ -105,10 +108,10 @@ sudo systemctl restart ddns-porkbun.timer
 ## **Security Features**
 
 - **Dedicated system user**: Runs as `ddns-porkbun` user with minimal privileges
-- **Secure file permissions**: 
+- **Secure file permissions**:
   - API keys file (`.env`): `600` (owner read-only)
   - Configuration file: `640` (owner read/write, group read)
-- **Systemd hardening**: 
+- **Systemd hardening**:
   - `NoNewPrivileges=true`
   - `PrivateTmp=true`
   - `ProtectSystem=strict`
@@ -120,12 +123,14 @@ sudo systemctl restart ddns-porkbun.timer
 ## **Prerequisites**
 
 ### **Porkbun API Setup:**
+
 1. Go to [Porkbun API Settings](https://porkbun.com/account/api)
 2. Enable API access for your domain
 3. Generate API Key and Secret API Key
 4. Note down both keys for the installation process
 
 ### **System Requirements:**
+
 - Linux system with systemd
 - Root/sudo access for installation
 - Internet connectivity for API calls
@@ -139,6 +144,7 @@ sudo systemctl restart ddns-porkbun.timer
 If you prefer manual installation or need to customize the setup:
 
 ### **1. Download and Extract:**
+
 ```bash
 # Create installation directory
 sudo mkdir -p /opt/ddns-porkbun
@@ -152,6 +158,7 @@ sudo rm -rf "/opt/ddns-porkbun/ddns-porkbun-script-${VERSION#v}" "/opt/ddns-pork
 ```
 
 ### **2. Install Dependencies:**
+
 ```bash
 # Install required packages
 sudo apt update
@@ -163,11 +170,13 @@ sudo chmod +x /usr/local/bin/yq
 ```
 
 ### **3. Create System User:**
+
 ```bash
 sudo useradd -r -s /bin/false -d /nonexistent -c "DDNS Porkbun service user" ddns-porkbun
 ```
 
 ### **4. Set Up Configuration:**
+
 ```bash
 # Create configuration directory
 sudo mkdir -p /etc/ddns-porkbun
@@ -202,12 +211,14 @@ sudo chmod 640 /etc/ddns-porkbun/config.yaml
 ```
 
 ### **5. Update Script Paths:**
+
 ```bash
 sudo chmod +x /opt/ddns-porkbun/ddns-porkbun-script.sh
 sudo ln -sf /opt/ddns-porkbun/ddns-porkbun-script.sh /usr/local/bin/ddns-porkbun
 ```
 
 ### **6. Create Systemd Service:**
+
 ```bash
 # Create service file
 sudo tee /etc/systemd/system/ddns-porkbun.service > /dev/null <<EOF
@@ -260,6 +271,7 @@ sudo systemctl enable --now ddns-porkbun.timer
 ```
 
 ### **7. Set Up Logging:**
+
 ```bash
 # Create log file
 sudo touch /var/log/ddns-porkbun.log
@@ -290,6 +302,7 @@ EOF
 ### **Common Issues:**
 
 1. **Permission denied errors:**
+
    ```bash
    # Fix file permissions
    sudo chown -R ddns-porkbun:ddns-porkbun /etc/ddns-porkbun
@@ -303,26 +316,30 @@ EOF
    - Check that domain is correctly spelled in config
 
 3. **Service not starting:**
+
    ```bash
    # Check service status
    sudo systemctl status ddns-porkbun.service
-   
+
    # View detailed logs
    sudo journalctl -u ddns-porkbun.service -n 50
    ```
 
 4. **Missing dependencies:**
+
    ```bash
    # Install missing tools
    sudo apt install -y curl wget jq sed tar
-   
+
    # Install yq manually
    sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
    sudo chmod +x /usr/local/bin/yq
    ```
 
 ### **Debug Mode:**
+
 Run the script manually to see detailed output:
+
 ```bash
 sudo -u ddns-porkbun /usr/local/bin/ddns-porkbun
 ```

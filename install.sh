@@ -53,7 +53,7 @@ ask_yes_no() {
     local question="$1"
     local default="${2:-n}"
     local answer
-    
+
     while true; do
         if [[ "$default" == "y" ]]; then
             read -p "$question [Y/n]: " answer
@@ -62,7 +62,7 @@ ask_yes_no() {
             read -p "$question [y/N]: " answer
             answer=${answer:-n}
         fi
-        
+
         case ${answer,,} in
             y|yes) return 0 ;;
             n|no) return 1 ;;
@@ -83,23 +83,23 @@ check_root() {
 # Function to check and install dependencies
 check_dependencies() {
     log_info "Checking dependencies..."
-    
+
     local dependencies=("curl" "wget" "sed" "tar" "yq" "jq")
     local missing_deps=()
-    
+
     for cmd in "${dependencies[@]}"; do
         if ! command -v "$cmd" &>/dev/null; then
             missing_deps+=("$cmd")
         fi
     done
-    
+
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
         log_warning "Missing dependencies: ${missing_deps[*]}"
-        
+
         if ask_yes_no "Do you want to install missing dependencies?" "y"; then
             log_info "Installing dependencies..."
             apt-get update
-            
+
             for dep in "${missing_deps[@]}"; do
                 case "$dep" in
                     "yq")
@@ -117,7 +117,7 @@ check_dependencies() {
                         ;;
                 esac
             done
-            
+
             log_success "Dependencies installed successfully"
         else
             log_error "Cannot continue without dependencies. Aborting installation."
@@ -131,7 +131,7 @@ check_dependencies() {
 # Function to create system user
 create_system_user() {
     log_info "Creating system user 'ddns-porkbun'..."
-    
+
     if ! id "ddns-porkbun" &>/dev/null; then
         useradd -r -s /bin/false -d /nonexistent -c "DDNS Porkbun service user" ddns-porkbun
         log_success "User 'ddns-porkbun' created successfully"
@@ -143,26 +143,26 @@ create_system_user() {
 # Function to download scripts
 download_scripts() {
     log_info "Downloading scripts from repository..."
-    
+
     # Get latest version from GitHub
     log_info "Fetching latest version from GitHub..."
     local VERSION
     VERSION=$(curl -Ls "https://api.github.com/repos/StafLoker/ddns-porkbun-script/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-    
+
     if [[ -z "$VERSION" ]]; then
         log_error "Failed to fetch latest version. Exiting."
         exit 1
     fi
-    
+
     log_info "Latest version found: $VERSION"
-    
+
     # Create install directory
     mkdir -p "$INSTALL_DIR"
-    
+
     # Download the specific version's tar.gz file
     local url="https://github.com/StafLoker/ddns-porkbun-script/archive/refs/tags/${VERSION}.tar.gz"
     log_info "Downloading version ${VERSION} from $url"
-    
+
     wget --progress=dot:giga --no-check-certificate -P "${INSTALL_DIR}" "${url}" || {
         log_error "Download failed. Retrying..."
         wget --progress=dot:giga --no-check-certificate -P "${INSTALL_DIR}" "${url}" || {
@@ -170,22 +170,22 @@ download_scripts() {
             exit 1
         }
     }
-    
+
     log_info "Extracting the downloaded tar.gz file..."
     tar -xzf "${INSTALL_DIR}/${VERSION}.tar.gz" -C "$INSTALL_DIR"
     rm -f "${INSTALL_DIR}/${VERSION}.tar.gz"
-    
+
     # Move the extracted files to the correct location
     if [[ -f "${INSTALL_DIR}/ddns-porkbun-script-${VERSION#v}/ddns-porkbun-script.sh" ]]; then
         mv "${INSTALL_DIR}/ddns-porkbun-script-${VERSION#v}/"* "$INSTALL_DIR/"
         rm -rf "${INSTALL_DIR}/ddns-porkbun-script-${VERSION#v}"
-        
+
         # Make script executable
         chmod +x "${INSTALL_DIR}/$SCRIPT_NAME"
-        
+
         # Create symlink
         ln -sf "$INSTALL_DIR/$SCRIPT_NAME" "/usr/local/bin/$SERVICE_NAME"
-        
+
         log_success "Scripts downloaded and configured"
     else
         log_error "Script file not found in the downloaded archive"
@@ -196,10 +196,10 @@ download_scripts() {
 # Function to initialize config structure
 init_config() {
     log_info "Initializing configuration..."
-    
+
     # Create config directory
     mkdir -p "$CONFIG_DIR"
-    
+
     # Set proper permissions
     chown -R ddns-porkbun:ddns-porkbun "$CONFIG_DIR"
     chmod 750 "$CONFIG_DIR"
@@ -208,29 +208,29 @@ init_config() {
 # Function to configure API keys
 configure_api_keys() {
     log_info "Configuring API keys..."
-    
+
     if [[ ! -f "$ENV_FILE" ]]; then
         log_info "Creating .env file..."
-        
+
         echo
         log_info "You need your Porkbun API credentials:"
         log_info "1. Go to https://porkbun.com/account/api"
         log_info "2. Enable API access"
         log_info "3. Get your API key and Secret API key"
         echo
-        
+
         read -p "Enter your Porkbun API key: " api_key
         read -p "Enter your Porkbun secret API key: " secret_api_key
-        
+
         cat > "$ENV_FILE" <<EOF
 PORKBUN_API_KEY="$api_key"
 PORKBUN_SECRET_API_KEY="$secret_api_key"
 EOF
-        
+
         # Set proper permissions
         chmod 600 "$ENV_FILE"
         chown ddns-porkbun:ddns-porkbun "$ENV_FILE"
-        
+
         log_success ".env file created successfully"
     else
         log_info ".env file already exists"
@@ -240,24 +240,24 @@ EOF
 # Function to configure DDNS settings
 configure_ddns() {
     log_info "Configuring DDNS settings..."
-    
+
     if [[ ! -f "$CONFIG_FILE" ]]; then
         log_info "Creating configuration file..."
-        
+
         read -p "Enter your domain (e.g., example.com): " domain
-        
+
         # Configure concurrency
         local concurrency_value="false"
         if ask_yes_no "Do you want to enable concurrent updates?"; then
             concurrency_value="true"
         fi
-        
+
         # Configure IPv4
         local ipv4_enabled="false"
         local ipv4_subdomains=()
         if ask_yes_no "Do you want to update IPv4 records?" "y"; then
             ipv4_enabled="true"
-            
+
             log_info "Enter IPv4 subdomains (one by one). Type 'done' when finished."
             while true; do
                 read -p "Enter subdomain (or 'done' to finish): " subdomain
@@ -269,13 +269,13 @@ configure_ddns() {
                 fi
             done
         fi
-        
+
         # Configure IPv6
         local ipv6_enabled="false"
         local ipv6_subdomains=()
         if ask_yes_no "Do you want to update IPv6 records?"; then
             ipv6_enabled="true"
-            
+
             log_info "Enter IPv6 subdomains (one by one). Type 'done' when finished."
             while true; do
                 read -p "Enter subdomain (or 'done' to finish): " subdomain
@@ -287,7 +287,7 @@ configure_ddns() {
                 fi
             done
         fi
-        
+
         # Create YAML configuration
         cat > "$CONFIG_FILE" <<EOF
 domain: '$domain'
@@ -299,21 +299,21 @@ ipv6:
   enable: $ipv6_enabled
   subdomains: []
 EOF
-        
+
         # Add IPv4 subdomains
         for subdomain in "${ipv4_subdomains[@]}"; do
             yq eval ".ipv4.subdomains += [\"$subdomain\"]" -i "$CONFIG_FILE"
         done
-        
+
         # Add IPv6 subdomains
         for subdomain in "${ipv6_subdomains[@]}"; do
             yq eval ".ipv6.subdomains += [\"$subdomain\"]" -i "$CONFIG_FILE"
         done
-        
+
         # Set proper permissions
         chmod 640 "$CONFIG_FILE"
         chown ddns-porkbun:ddns-porkbun "$CONFIG_FILE"
-        
+
         log_success "Configuration file created successfully"
     else
         log_info "Configuration file already exists"
@@ -323,12 +323,12 @@ EOF
 # Function to configure logging
 configure_logging() {
     log_info "Configuring logging system..."
-    
+
     # Create log file with proper permissions
     touch "$LOG_FILE"
     chown ddns-porkbun:ddns-porkbun "$LOG_FILE"
     chmod 644 "$LOG_FILE"
-    
+
     # Configure logrotate
     log_info "Configuring log rotation..."
     cat > "/etc/logrotate.d/$SERVICE_NAME" <<EOF
@@ -345,14 +345,14 @@ $LOG_FILE {
     endscript
 }
 EOF
-    
+
     log_success "Logging system configured"
 }
 
 # Function to create systemd service and timer
 create_systemd_service() {
     log_info "Creating systemd service and timer..."
-    
+
     # Create service file
     cat > "/etc/systemd/system/$SERVICE_NAME.service" <<EOF
 [Unit]
@@ -381,7 +381,7 @@ ReadWritePaths=$LOG_FILE $CONFIG_DIR
 [Install]
 WantedBy=multi-user.target
 EOF
-    
+
     # Ask for timer interval
     echo
     log_info "Configuring update schedule..."
@@ -391,10 +391,10 @@ EOF
     echo "  30min    - Every 30 minutes"
     echo "  1h       - Every hour"
     echo
-    
+
     read -p "Update interval [15min]: " timer_interval
     timer_interval=${timer_interval:-"15min"}
-    
+
     # Create timer file
     cat > "/etc/systemd/system/$SERVICE_NAME.timer" <<EOF
 [Unit]
@@ -410,12 +410,12 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
-    
+
     # Reload systemd and enable timer
     systemctl daemon-reload
     systemctl enable "$SERVICE_NAME.timer"
     systemctl start "$SERVICE_NAME.timer"
-    
+
     log_success "Service and timer created and enabled"
     log_info "Timer scheduled for: every $timer_interval"
 }
@@ -433,7 +433,7 @@ display_config() {
 run_initial_update() {
     if ask_yes_no "Do you want to run an initial DDNS update now?"; then
         log_info "Running initial DDNS update..."
-        
+
         if systemctl start "$SERVICE_NAME.service"; then
             sleep 2
             log_success "Initial update started"
@@ -470,40 +470,40 @@ show_final_status() {
 # Main function
 main() {
     log_info "Starting DDNS Porkbun installation..."
-    
+
     # Check if running as root
     check_root
-    
+
     # Step 1: Check dependencies
     check_dependencies
-    
+
     # Step 2: Create system user
     create_system_user
-    
+
     # Step 3: Download scripts
     download_scripts
-    
+
     # Step 4: Initialize configuration
     init_config
-    
+
     # Step 5: Configure API keys
     configure_api_keys
-    
+
     # Step 6: Configure DDNS settings
     configure_ddns
-    
+
     # Step 7: Configure logging
     configure_logging
-    
+
     # Step 8: Create systemd service and timer
     create_systemd_service
-    
+
     # Step 9: Display final configuration
     display_config
-    
+
     # Step 10: Run initial update
     run_initial_update
-    
+
     # Show final status
     show_final_status
 }
