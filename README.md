@@ -15,6 +15,7 @@
 </div>
 
 ## Alerts
+
 > [!IMPORTANT]
 > Impossible migrate from `1.x.x` to `2.x.x`.
 > Please remove completely version `1.x.x` and install `2.x.x`.
@@ -151,8 +152,10 @@ sudo systemctl restart ddns-porkbun.timer
 - Linux system with systemd
 - Root/sudo access for installation
 - Internet connectivity for API calls
-- The following packages (auto-installed if missing):
-  - `curl`, `wget`, `jq`, `yq`, `sed`, `tar`
+- **Automatic dependency installation**: The installer automatically detects and installs missing dependencies:
+  - `curl`, `wget`, `jq`, `sed`, `tar`
+  - **`yq` (mikefarah/yq)**: Automatically downloaded and installed with architecture detection
+    - Supports: x86_64, aarch64/arm64, armv7l/armv6l, i386/i686
 
 ---
 
@@ -177,9 +180,35 @@ sudo rm -rf "/opt/ddns-porkbun/ddns-porkbun-script-${VERSION#v}" "/opt/ddns-pork
 ### **2. Install Dependencies:**
 
 ```bash
-# Install required packages
+# Install basic packages
 sudo apt update
-sudo apt install -y curl wget jq sed tar yq
+sudo apt install -y curl wget jq sed tar
+
+# Install yq (mikefarah/yq) with architecture detection
+ARCH=$(uname -m)
+YQ_VERSION="v4.45.4"
+
+case $ARCH in
+    x86_64)
+        YQ_BINARY="yq_linux_amd64"
+        ;;
+    aarch64|arm64)
+        YQ_BINARY="yq_linux_arm64"
+        ;;
+    armv7l|armv6l)
+        YQ_BINARY="yq_linux_arm"
+        ;;
+    i386|i686)
+        YQ_BINARY="yq_linux_386"
+        ;;
+    *)
+        echo "Unsupported architecture: $ARCH"
+        exit 1
+        ;;
+esac
+
+sudo wget -O /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/${YQ_BINARY}"
+sudo chmod +x /usr/local/bin/yq
 ```
 
 ### **3. Create System User:**
@@ -207,16 +236,16 @@ sudo chmod 600 /etc/ddns-porkbun/.env
 
 # Create configuration file
 sudo tee /etc/ddns-porkbun/config.yaml > /dev/null <<EOF
-domain: example.com
+domain: 'example.com'
 concurrency: true
 ipv4:
   enable: true
   subdomains:
-    - www
-    - mail
+    - 'www'
+    - 'mail'
 ipv6:
   enable: false
-  subdomains: []
+  subdomains:
 EOF
 
 sudo chown ddns-porkbun:ddns-porkbun /etc/ddns-porkbun/config.yaml
@@ -338,12 +367,10 @@ EOF
    sudo journalctl -u ddns-porkbun.service -n 50
    ```
 
-4. **Missing dependencies:**
-
-   ```bash
-   # Install missing tools
-   sudo apt install -y curl wget jq sed tar yq
-   ```
+4. **yq version conflicts:**
+   - The installer automatically handles yq installation
+   - If you have issues, remove existing yq: `sudo apt remove yq && sudo pip3 uninstall yq`
+   - Then reinstall using the manual yq installation steps above
 
 ### **Debug Mode:**
 
@@ -372,6 +399,9 @@ sudo systemctl daemon-reload
 sudo userdel ddns-porkbun
 sudo rm -rf /etc/ddns-porkbun /opt/ddns-porkbun /var/log/ddns-porkbun.log
 sudo rm -f /usr/local/bin/ddns-porkbun /etc/logrotate.d/ddns-porkbun
+
+# Optionally remove yq if not needed elsewhere
+sudo rm -f /usr/local/bin/yq
 ```
 
 ---
