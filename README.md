@@ -1,13 +1,30 @@
-# **DDNS Porkbun Script**
+<div align="center">
+   <h1><b>DDNS Porkbun Script</b></h1>
+   <p><i>~ Still online ~</i></p>
+   <p align="center">
+       · <a href="https://github.com/StafLoker/ddns-porkbun-script/releases">Releases</a> ·
+   </p>
+</div>
 
-This script automatically updates DNS records for your domain/subdomains on Porkbun using their API. It ensures your records are always in sync with your current public IP addresses (both IPv4 and IPv6).
+<div align="center">
+   <a href="https://github.com/StafLoker/ddns-porkbun-script/releases"><img src="https://img.shields.io/github/downloads/StafLoker/ddns-porkbun-script/total.svg?style=flat" alt="downloads"/></a>
+   <a href="https://github.com/StafLoker/ddns-porkbun-script/releases"><img src="https://img.shields.io/github/release-pre/StafLoker/ddns-porkbun-script.svg?style=flat" alt="latest version"/></a>
+   <a href="https://github.com/StafLoker/ddns-porkbun-script/blob/main/LICENSE"><img src="https://img.shields.io/github/license/StafLoker/ddns-porkbun-script.svg?style=flat" alt="license"/></a>
+
+   <p>This script automatically updates DNS records for your domain/subdomains on Porkbun using their API. It ensures your records are always in sync with your current public IP addresses (both IPv4 and IPv6).</p>
+</div>
+
+## Alerts
+> [!IMPORTANT]
+> Impossible migrate from `1.x.x` to `2.x.x`.
+> Please remove completely version `1.x.x` and install `2.x.x`.
 
 ---
 
 ## **Quick Install & Upgrade**
 
 ```bash
-sudo bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh")
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh)"
 ```
 
 ---
@@ -162,11 +179,7 @@ sudo rm -rf "/opt/ddns-porkbun/ddns-porkbun-script-${VERSION#v}" "/opt/ddns-pork
 ```bash
 # Install required packages
 sudo apt update
-sudo apt install -y curl wget jq sed tar
-
-# Install yq
-sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-sudo chmod +x /usr/local/bin/yq
+sudo apt install -y curl wget jq sed tar yq
 ```
 
 ### **3. Create System User:**
@@ -329,11 +342,7 @@ EOF
 
    ```bash
    # Install missing tools
-   sudo apt install -y curl wget jq sed tar
-
-   # Install yq manually
-   sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-   sudo chmod +x /usr/local/bin/yq
+   sudo apt install -y curl wget jq sed tar yq
    ```
 
 ### **Debug Mode:**
