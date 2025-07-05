@@ -179,11 +179,7 @@ sudo rm -rf "/opt/ddns-porkbun/ddns-porkbun-script-${VERSION#v}" "/opt/ddns-pork
 ```bash
 # Install required packages
 sudo apt update
-sudo apt install -y curl wget jq sed tar
-
-# Install yq
-sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-sudo chmod +x /usr/local/bin/yq
+sudo apt install -y curl wget jq sed tar yq
 ```
 
 ### **3. Create System User:**
@@ -346,11 +342,7 @@ EOF
 
    ```bash
    # Install missing tools
-   sudo apt install -y curl wget jq sed tar
-
-   # Install yq manually
-   sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-   sudo chmod +x /usr/local/bin/yq
+   sudo apt install -y curl wget jq sed tar yq
    ```
 
 ### **Debug Mode:**
