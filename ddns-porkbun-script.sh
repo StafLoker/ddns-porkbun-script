@@ -1,9 +1,17 @@
 #!/bin/bash
 
-# Load keys
-source keys.env
+# DDNS Porkbun Script
+# Updates DNS records with current public IP addresses
 
-readonly DATA_FILE="data.json"
+# Load environment variables
+if [[ -f "/etc/ddns-porkbun/.env" ]]; then
+    source /etc/ddns-porkbun/.env
+else
+    echo "ERROR: Environment file not found. Exiting."
+    exit 1
+fi
+
+readonly CONFIG_FILE="/etc/ddns-porkbun/config.yaml"
 
 # Check if API keys are set
 if [[ -z "$PORKBUN_API_KEY" || -z "$PORKBUN_SECRET_API_KEY" ]]; then
@@ -11,19 +19,25 @@ if [[ -z "$PORKBUN_API_KEY" || -z "$PORKBUN_SECRET_API_KEY" ]]; then
   exit 1
 fi
 
-# Check if DATA_FILE exists
-if [[ ! -f "$DATA_FILE" ]]; then
-  echo "ERROR: Data file $DATA_FILE not found. Exiting."
+# Check if CONFIG_FILE exists
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  echo "ERROR: Config file $CONFIG_FILE not found. Exiting."
   exit 1
 fi
 
-# Load JSON data file
-readonly DOMAIN=$(jq -r '.domain' "$DATA_FILE")
-readonly CONCURRENCY=$(jq -r '.concurrency' "$DATA_FILE")
-readonly IPv4=$(jq -r '.ipv4' "$DATA_FILE")
-readonly SUBDOMAINS_TYPE_A=$(jq -r '.subdomains_type_a[]' "$DATA_FILE")
-readonly IPv6=$(jq -r '.ipv6' "$DATA_FILE")
-readonly SUBDOMAINS_TYPE_AAAA=$(jq -r '.subdomains_type_aaaa[]' "$DATA_FILE")
+# Check if yq is installed
+if ! command -v yq &>/dev/null; then
+  echo "ERROR: yq is not installed. Please install it and try again."
+  exit 1
+fi
+
+# Load YAML configuration
+readonly DOMAIN=$(yq eval '.domain' "$CONFIG_FILE")
+readonly CONCURRENCY=$(yq eval '.concurrency' "$CONFIG_FILE")
+readonly IPv4=$(yq eval '.ipv4.enable' "$CONFIG_FILE")
+readonly SUBDOMAINS_TYPE_A=$(yq eval '.ipv4.subdomains[]' "$CONFIG_FILE")
+readonly IPv6=$(yq eval '.ipv6.enable' "$CONFIG_FILE")
+readonly SUBDOMAINS_TYPE_AAAA=$(yq eval '.ipv6.subdomains[]' "$CONFIG_FILE")
 
 # Porkbun API URLs
 readonly BASE_URL="https://api.porkbun.com/api/json/v3"
@@ -145,7 +159,7 @@ main() {
     if [[ "$IPv6" == "true" ]]; then
       for subdomain in $SUBDOMAINS_TYPE_AAAA; do
         (
-          update_subdomain_if_needed "$subdomain" "$public_ipv6" "A" || {
+          update_subdomain_if_needed "$subdomain" "$public_ipv6" "AAAA" || {
             log "ERROR" "Error processing subdomain $subdomain with IPv6."
           }
         ) &
