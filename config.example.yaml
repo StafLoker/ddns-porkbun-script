@@ -1,0 +1,12 @@
+domain: example.com
+concurrency: true
+ipv4: 
+  enable: true
+  subdomains:
+    - sub1
+    - sub2
+ipv6: 
+  enable: false
+  subdomains:
+    - sub3
+    - sub4
