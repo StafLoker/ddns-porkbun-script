@@ -2,7 +2,7 @@
 
 # DDNS Porkbun Installer Script
 # Repository: https://github.com/StafLoker/ddns-porkbun-script
-# Usage: bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh")
+# Usage: sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh)"
 
 set -euo pipefail
 
@@ -75,7 +75,7 @@ ask_yes_no() {
 check_root() {
     if [[ $EUID -ne 0 ]]; then
         log_error "This script must be run as root"
-        log_info "Use: sudo bash <(curl -Ls \"https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh\")"
+        log_info "Use: sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh)""
         exit 1
     fi
 }
@@ -98,24 +98,10 @@ check_dependencies() {
 
         if ask_yes_no "Do you want to install missing dependencies?" "y"; then
             log_info "Installing dependencies..."
-            apt-get update
+            apt update
 
             for dep in "${missing_deps[@]}"; do
-                case "$dep" in
-                    "yq")
-                        log_info "Installing yq..."
-                        wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-                        chmod +x /usr/local/bin/yq
-                        ;;
-                    "jq")
-                        log_info "Installing jq..."
-                        apt-get install -y jq
-                        ;;
-                    *)
-                        log_info "Installing $dep..."
-                        apt-get install -y "$dep"
-                        ;;
-                esac
+                apt install -y "$dep"
             done
 
             log_success "Dependencies installed successfully"
@@ -258,10 +244,10 @@ configure_ddns() {
         if ask_yes_no "Do you want to update IPv4 records?" "y"; then
             ipv4_enabled="true"
 
-            log_info "Enter IPv4 subdomains (one by one). Type 'done' when finished."
+            log_info "Enter IPv4 subdomains (one by one). Type '0' when finished."
             while true; do
-                read -p "Enter subdomain (or 'done' to finish): " subdomain
-                if [[ "$subdomain" == "done" ]]; then
+                read -p "Enter subdomain (or '0' to finish): " subdomain
+                if [[ "$subdomain" == "0" ]]; then
                     break
                 fi
                 if [[ -n "$subdomain" ]]; then
@@ -276,10 +262,10 @@ configure_ddns() {
         if ask_yes_no "Do you want to update IPv6 records?"; then
             ipv6_enabled="true"
 
-            log_info "Enter IPv6 subdomains (one by one). Type 'done' when finished."
+            log_info "Enter IPv6 subdomains (one by one). Type '0' when finished."
             while true; do
-                read -p "Enter subdomain (or 'done' to finish): " subdomain
-                if [[ "$subdomain" == "done" ]]; then
+                read -p "Enter subdomain (or '0' to finish): " subdomain
+                if [[ "$subdomain" == "0" ]]; then
                     break
                 fi
                 if [[ -n "$subdomain" ]]; then
