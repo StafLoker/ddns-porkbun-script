@@ -1,229 +1,351 @@
 # **DDNS Porkbun Script**
 
-This script allows you to automatically update DNS records for your domain/subdomains on Porkbun using their API. It ensures your records are always in sync with your current public IP.
+This script automatically updates DNS records for your domain/subdomains on Porkbun using their API. It ensures your records are always in sync with your current public IP addresses (both IPv4 and IPv6).
 
 ---
 
-## **Install & Upgrade**
+## **Quick Install & Upgrade**
 
 ```bash
-bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh")
+sudo bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh")
 ```
 
 ---
 
-## **Install Legacy Version (Not Recommended)**
+## **Configuration**
 
-To install a specific version, use the following command. For example, to install version `v1.0.1`:
+The script uses YAML configuration with the following structure:
 
+```yaml
+domain: example.com
+concurrency: true
+ipv4:
+  enable: true
+  subdomains:
+    - sub1
+    - sub2
+    - www
+ipv6:
+  enable: false
+  subdomains:
+    - sub3
+    - sub4
+```
+
+### **Configuration Options:**
+
+- **`domain`**: Your main domain (e.g., `example.com`)
+- **`concurrency`**: Enable parallel processing of subdomains (`true`/`false`)
+- **`ipv4.enable`**: Enable IPv4 record updates (`true`/`false`)
+- **`ipv4.subdomains`**: List of subdomains for A records
+- **`ipv6.enable`**: Enable IPv6 record updates (`true`/`false`)
+- **`ipv6.subdomains`**: List of subdomains for AAAA records
+
+---
+
+## **File Locations**
+
+After installation, files are organized in standard Linux locations:
+
+| File/Directory | Location | Purpose |
+|---|---|---|
+| Configuration | `/etc/ddns-porkbun/config.yaml` | DDNS settings |
+| API Keys | `/etc/ddns-porkbun/.env` | Porkbun API credentials |
+| Scripts | `/opt/ddns-porkbun/` | Main script and documentation |
+| Logs | `/var/log/ddns-porkbun.log` | Service logs with rotation |
+| Systemd Service | `/etc/systemd/system/ddns-porkbun.service` | Service definition |
+| Systemd Timer | `/etc/systemd/system/ddns-porkbun.timer` | Scheduling |
+| Executable | `/usr/local/bin/ddns-porkbun` | Symlink to main script |
+
+---
+
+## **Management Commands**
+
+### **Service Management:**
 ```bash
-VERSION=v1.0.1 && bash <(curl -Ls "https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh") $VERSION
+# Check service status
+sudo systemctl status ddns-porkbun.service
+
+# Check timer status
+sudo systemctl status ddns-porkbun.timer
+
+# View next scheduled runs
+systemctl list-timers ddns-porkbun.timer
+
+# Run manual update
+sudo systemctl start ddns-porkbun.service
+```
+
+### **Logs:**
+```bash
+# View recent logs
+sudo tail -f /var/log/ddns-porkbun.log
+
+# View systemd logs
+sudo journalctl -u ddns-porkbun.service -f
+
+# View all ddns-porkbun logs
+sudo journalctl -t ddns-porkbun
+```
+
+### **Configuration:**
+```bash
+# Edit main configuration
+sudo nano /etc/ddns-porkbun/config.yaml
+
+# Edit API keys
+sudo nano /etc/ddns-porkbun/.env
+
+# Restart after config changes
+sudo systemctl restart ddns-porkbun.timer
 ```
 
 ---
 
-## **Manual Install**
+## **Security Features**
 
-### **Prerequisites**
-
-1. **Download the Project:**  
-   Clone or download the project from the GitHub repository (replace `${VERSION}` with the version of the latest release):
-
-   ```bash
-   sudo mkdir -p /opt/ddns-porkbun-script
-   cd /opt/ddns-porkbun-script
-   sudo wget https://github.com/StafLoker/ddns-porkbun-script/archive/refs/tags/${VERSION}.tar.gz
-   sudo tar -xzvf ${VERSION}.tar.gz
-   sudo rm ${VERSION}.tar.gz
-   ```
-
-   This will download the latest version of the script and extract it into the `/opt/ddns-porkbun-script` directory.
-
-2. **Install `jq`:**  
-   `jq` is a lightweight and flexible command-line JSON processor, required to parse API responses.
-
-   ```bash
-   sudo apt install jq
-   ```
-
-3. **Create `keys.env` file:**  
-   Store your API keys securely in an environment file. Replace `pk` and `sk` with your actual API and Secret API keys from Porkbun.
-
-   ```bash
-   echo 'PORKBUN_API_KEY="pk"' > keys.env
-   echo 'PORKBUN_SECRET_API_KEY="sk"' >> keys.env
-   ```
-
-   Make sure to secure this file:
-   ```bash
-   chmod 600 keys.env
-   ```
-
-4. **Configure your domain and subdomains:**  
-   Create the `data.json` file to include your domain and subdomains. Example format:
-   ```json
-   {
-       "domain": "example.com",
-       "concurrency": true,
-       "ipv4": true,
-       "subdomains_type_a": [
-           "sub1",
-           "sub2"
-       ],
-       "ipv6": false,
-       "subdomains_type_aaaa": [
-           "sub3",
-           "sub4"
-       ]
-   }
-   ```
-
-5. **Make the script executable:**  
-   Ensure the script has executable permissions:
-   ```bash
-   chmod +x ddns-porkbun-script.sh
-   ```
+- **Dedicated system user**: Runs as `ddns-porkbun` user with minimal privileges
+- **Secure file permissions**: 
+  - API keys file (`.env`): `600` (owner read-only)
+  - Configuration file: `640` (owner read/write, group read)
+- **Systemd hardening**: 
+  - `NoNewPrivileges=true`
+  - `PrivateTmp=true`
+  - `ProtectSystem=strict`
+  - `ProtectHome=true`
+- **Log rotation**: Automatic cleanup with 14-day retention
 
 ---
 
-### **Create System User**
+## **Prerequisites**
 
-For security reasons, it is recommended to run the script as a dedicated system user. Follow these steps to create the user:
+### **Porkbun API Setup:**
+1. Go to [Porkbun API Settings](https://porkbun.com/account/api)
+2. Enable API access for your domain
+3. Generate API Key and Secret API Key
+4. Note down both keys for the installation process
 
-1. **Create the user:**  
-   Replace `/opt/ddns-porkbun-script` with your installation directory.
-
-   ```bash
-   sudo useradd -r -d /opt/ddns-porkbun-script -c "User for the DDNS Porkbun script" ddns-system
-   ```
-
-2. **Set ownership of the installation directory:**  
-   Ensure the user `ddns-system` owns the installation directory.
-
-   ```bash
-   sudo chown -R ddns-system:ddns-system /opt/ddns-porkbun-script
-   ```
+### **System Requirements:**
+- Linux system with systemd
+- Root/sudo access for installation
+- Internet connectivity for API calls
+- The following packages (auto-installed if missing):
+  - `curl`, `wget`, `jq`, `yq`, `sed`, `tar`
 
 ---
 
-### **Choose Between Cron and Systemd**
+## **Manual Installation**
 
-You can automate the script using either `cron` or `systemd`. Below are instructions for both methods.
+If you prefer manual installation or need to customize the setup:
 
-#### **Option 1: Automating with Cron**
-
-1. **Open crontab for editing:**
-   ```bash
-   crontab -e
-   ```
-
-2. **Add the following entries:**  
-   - **Run every hour:** Updates DNS records every hour.
-   - **Run on system reboot:** Ensures DNS updates upon system startup.
-
-   ```bash
-   # Every 1 hour
-   0 * * * * /opt/ddns-porkbun-script/ddns-porkbun-script.sh
-
-   # At system reboot
-   @reboot /opt/ddns-porkbun-script/ddns-porkbun-script.sh
-   ```
-
-3. **Save and exit the crontab editor.**
-
-4. **Updating `ddns-porkbun-script.sh` for Cron Compatibility**  
-   Ensure the script uses absolute paths for `keys.env` and `data.json`:
-
-   ```bash
-   # Load keys
-   source /opt/ddns-porkbun-script/keys.env
-
-   # Load JSON
-   DATA_FILE="/opt/ddns-porkbun-script/data.json"
-   ```
-
-5. **Verify the Cron job:**  
-   Execute the script manually to confirm it works without errors:
-   ```bash
-   /opt/ddns-porkbun-script/ddns-porkbun-script.sh
-   ```
-
----
-
-#### **Option 2: Automating with Systemd**
-
-1. **Create the systemd service file:**  
-   Replace `/opt/ddns-porkbun-script` with your installation directory.
-
-   ```bash
-   sudo bash -c "cat > /etc/systemd/system/ddns-porkbun.service <<EOF
-   [Unit]
-   Description=DDNS Porkbun Update Service
-   After=network.target
-
-   [Service]
-   User=ddns-system
-   ExecStart=/opt/ddns-porkbun-script/ddns-porkbun-script.sh
-
-   [Install]
-   WantedBy=multi-user.target
-   EOF"
-   ```
-
-2. **Create the systemd timer file:**  
-   Replace `1h` with your desired execution interval (e.g., `15min`, `1h`).
-
-   ```bash
-   sudo bash -c "cat > /etc/systemd/system/ddns-porkbun.timer <<EOF
-   [Unit]
-   Description=Run DDNS Porkbun script every 1h
-
-   [Timer]
-   OnBootSec=5min
-   OnUnitActiveSec=1h
-   Unit=ddns-porkbun.service
-
-   [Install]
-   WantedBy=timers.target
-   EOF"
-   ```
-
-3. **Reload systemd and enable the timer:**
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now ddns-porkbun.timer
-   ```
-
-4. **Verify the timer is active:**
-   ```bash
-   systemctl list-timers --all
-   ```
-
----
-
-## **Security Notes**
-
-- **Environment File:** Ensure the `keys.env` file is not accessible to other users on the system. Use `chmod 600` to restrict permissions.
-- **Avoid Hardcoding Keys:** Use the `source` command to load environment variables securely.
-
----
-
-## **Testing**
-
-To test the script manually, run:
+### **1. Download and Extract:**
 ```bash
-/opt/ddns-porkbun-script/ddns-porkbun-script.sh
+# Create installation directory
+sudo mkdir -p /opt/ddns-porkbun
+
+# Download latest release
+VERSION=$(curl -s https://api.github.com/repos/StafLoker/ddns-porkbun-script/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+sudo wget -P /opt/ddns-porkbun "https://github.com/StafLoker/ddns-porkbun-script/archive/refs/tags/${VERSION}.tar.gz"
+sudo tar -xzf "/opt/ddns-porkbun/${VERSION}.tar.gz" -C /opt/ddns-porkbun
+sudo mv /opt/ddns-porkbun/ddns-porkbun-script-${VERSION#v}/* /opt/ddns-porkbun/
+sudo rm -rf "/opt/ddns-porkbun/ddns-porkbun-script-${VERSION#v}" "/opt/ddns-porkbun/${VERSION}.tar.gz"
 ```
 
-Verify that the DNS records on Porkbun are updated to match your current public IP.
+### **2. Install Dependencies:**
+```bash
+# Install required packages
+sudo apt update
+sudo apt install -y curl wget jq sed tar
+
+# Install yq
+sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+sudo chmod +x /usr/local/bin/yq
+```
+
+### **3. Create System User:**
+```bash
+sudo useradd -r -s /bin/false -d /nonexistent -c "DDNS Porkbun service user" ddns-porkbun
+```
+
+### **4. Set Up Configuration:**
+```bash
+# Create configuration directory
+sudo mkdir -p /etc/ddns-porkbun
+sudo chown ddns-porkbun:ddns-porkbun /etc/ddns-porkbun
+sudo chmod 750 /etc/ddns-porkbun
+
+# Create API keys file
+sudo tee /etc/ddns-porkbun/.env > /dev/null <<EOF
+PORKBUN_API_KEY="your_api_key_here"
+PORKBUN_SECRET_API_KEY="your_secret_key_here"
+EOF
+
+sudo chown ddns-porkbun:ddns-porkbun /etc/ddns-porkbun/.env
+sudo chmod 600 /etc/ddns-porkbun/.env
+
+# Create configuration file
+sudo tee /etc/ddns-porkbun/config.yaml > /dev/null <<EOF
+domain: example.com
+concurrency: true
+ipv4:
+  enable: true
+  subdomains:
+    - www
+    - mail
+ipv6:
+  enable: false
+  subdomains: []
+EOF
+
+sudo chown ddns-porkbun:ddns-porkbun /etc/ddns-porkbun/config.yaml
+sudo chmod 640 /etc/ddns-porkbun/config.yaml
+```
+
+### **5. Update Script Paths:**
+```bash
+sudo chmod +x /opt/ddns-porkbun/ddns-porkbun-script.sh
+sudo ln -sf /opt/ddns-porkbun/ddns-porkbun-script.sh /usr/local/bin/ddns-porkbun
+```
+
+### **6. Create Systemd Service:**
+```bash
+# Create service file
+sudo tee /etc/systemd/system/ddns-porkbun.service > /dev/null <<EOF
+[Unit]
+Description=DDNS Porkbun Update Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ddns-porkbun
+User=ddns-porkbun
+Group=ddns-porkbun
+StandardOutput=append:/var/log/ddns-porkbun.log
+StandardError=append:/var/log/ddns-porkbun.log
+TimeoutStartSec=300
+WorkingDirectory=/opt/ddns-porkbun
+EnvironmentFile=-/etc/ddns-porkbun/.env
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/ddns-porkbun.log /etc/ddns-porkbun
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Create timer file
+sudo tee /etc/systemd/system/ddns-porkbun.timer > /dev/null <<EOF
+[Unit]
+Description=Run DDNS Porkbun update every 15min
+Requires=ddns-porkbun.service
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+RandomizedDelaySec=30
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+# Enable and start
+sudo systemctl daemon-reload
+sudo systemctl enable --now ddns-porkbun.timer
+```
+
+### **7. Set Up Logging:**
+```bash
+# Create log file
+sudo touch /var/log/ddns-porkbun.log
+sudo chown ddns-porkbun:ddns-porkbun /var/log/ddns-porkbun.log
+sudo chmod 644 /var/log/ddns-porkbun.log
+
+# Configure log rotation
+sudo tee /etc/logrotate.d/ddns-porkbun > /dev/null <<EOF
+/var/log/ddns-porkbun.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 644 ddns-porkbun ddns-porkbun
+    postrotate
+        systemctl reload-or-restart ddns-porkbun.service >/dev/null 2>&1 || true
+    endscript
+}
+EOF
+```
 
 ---
 
-## **Logging**
+## **Troubleshooting**
 
-Check logs using `journalctl`:
+### **Common Issues:**
+
+1. **Permission denied errors:**
+   ```bash
+   # Fix file permissions
+   sudo chown -R ddns-porkbun:ddns-porkbun /etc/ddns-porkbun
+   sudo chmod 600 /etc/ddns-porkbun/.env
+   sudo chmod 640 /etc/ddns-porkbun/config.yaml
+   ```
+
+2. **API authentication failures:**
+   - Verify API keys in `/etc/ddns-porkbun/.env`
+   - Ensure API access is enabled for your domain in Porkbun
+   - Check that domain is correctly spelled in config
+
+3. **Service not starting:**
+   ```bash
+   # Check service status
+   sudo systemctl status ddns-porkbun.service
+   
+   # View detailed logs
+   sudo journalctl -u ddns-porkbun.service -n 50
+   ```
+
+4. **Missing dependencies:**
+   ```bash
+   # Install missing tools
+   sudo apt install -y curl wget jq sed tar
+   
+   # Install yq manually
+   sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+   sudo chmod +x /usr/local/bin/yq
+   ```
+
+### **Debug Mode:**
+Run the script manually to see detailed output:
 ```bash
-journalctl -t ddns-porkbun | tail
+sudo -u ddns-porkbun /usr/local/bin/ddns-porkbun
+```
+
+---
+
+## **Uninstall**
+
+To completely remove the DDNS service:
+
+```bash
+# Stop and disable services
+sudo systemctl stop ddns-porkbun.timer ddns-porkbun.service
+sudo systemctl disable ddns-porkbun.timer ddns-porkbun.service
+
+# Remove systemd files
+sudo rm -f /etc/systemd/system/ddns-porkbun.{service,timer}
+sudo systemctl daemon-reload
+
+# Remove user and files
+sudo userdel ddns-porkbun
+sudo rm -rf /etc/ddns-porkbun /opt/ddns-porkbun /var/log/ddns-porkbun.log
+sudo rm -f /usr/local/bin/ddns-porkbun /etc/logrotate.d/ddns-porkbun
 ```
 
 ---
