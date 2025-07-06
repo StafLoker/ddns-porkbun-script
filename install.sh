@@ -75,7 +75,7 @@ ask_yes_no() {
 check_root() {
     if [[ $EUID -ne 0 ]]; then
         log_error "This script must be run as root"
-        log_info "Use: sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh)""
+        log_info "Use: sudo bash -c \"$(curl -fsSL https://raw.githubusercontent.com/StafLoker/ddns-porkbun-script/main/install.sh)\""
         exit 1
     fi
 }
@@ -101,7 +101,51 @@ check_dependencies() {
             apt update
 
             for dep in "${missing_deps[@]}"; do
-                apt install -y "$dep"
+                case "$dep" in
+                    "yq")
+                        log_info "Installing the correct yq version (mikefarah/yq)..."
+
+                        # Detect architecture
+                        local ARCH=$(uname -m)
+                        local YQ_VERSION="v4.45.4"
+                        local YQ_BINARY
+
+                        case $ARCH in
+                            x86_64)
+                                YQ_BINARY="yq_linux_amd64"
+                                ;;
+                            aarch64|arm64)
+                                YQ_BINARY="yq_linux_arm64"
+                                ;;
+                            armv7l|armv6l)
+                                YQ_BINARY="yq_linux_arm"
+                                ;;
+                            i386|i686)
+                                YQ_BINARY="yq_linux_386"
+                                ;;
+                            *)
+                                log_error "Unsupported architecture: $ARCH"
+                                exit 1
+                                ;;
+                        esac
+
+                        log_info "Detected architecture: $ARCH"
+                        log_info "Downloading yq ${YQ_VERSION} (${YQ_BINARY})..."
+                        wget -O /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/${YQ_BINARY}"
+                        chmod +x /usr/local/bin/yq
+
+                        # Verify installation
+                        if /usr/local/bin/yq --version &>/dev/null; then
+                            log_success "yq installed successfully"
+                        else
+                            log_error "Failed to install yq"
+                            exit 1
+                        fi
+                        ;;
+                    *)
+                        apt install -y "$dep"
+                        ;;
+                esac
             done
 
             log_success "Dependencies installed successfully"
@@ -274,26 +318,29 @@ configure_ddns() {
             done
         fi
 
-        # Create YAML configuration
+        # Create YAML configuration using a different approach
         cat > "$CONFIG_FILE" <<EOF
 domain: '$domain'
 concurrency: $concurrency_value
 ipv4:
   enable: $ipv4_enabled
-  subdomains: []
-ipv6:
-  enable: $ipv6_enabled
-  subdomains: []
+  subdomains:
 EOF
 
         # Add IPv4 subdomains
         for subdomain in "${ipv4_subdomains[@]}"; do
-            yq eval ".ipv4.subdomains += [\"$subdomain\"]" -i "$CONFIG_FILE"
+            echo "    - '$subdomain'" >> "$CONFIG_FILE"
         done
+
+        cat >> "$CONFIG_FILE" <<EOF
+ipv6:
+  enable: $ipv6_enabled
+  subdomains:
+EOF
 
         # Add IPv6 subdomains
         for subdomain in "${ipv6_subdomains[@]}"; do
-            yq eval ".ipv6.subdomains += [\"$subdomain\"]" -i "$CONFIG_FILE"
+            echo "    - '$subdomain'" >> "$CONFIG_FILE"
         done
 
         # Set proper permissions
