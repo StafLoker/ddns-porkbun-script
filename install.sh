@@ -48,6 +48,11 @@ log_debug() {
     echo -e "${BLUE}[DEBUG] $1${RESET}"
 }
 
+# Function to print SKIP messages
+log_skip() {
+    echo -e "${BLUE}[SKIP] $1${RESET}"
+}
+
 # Function to ask yes/no questions
 ask_yes_no() {
     local question="$1"
@@ -166,7 +171,7 @@ create_system_user() {
         useradd -r -s /bin/false -d /nonexistent -c "DDNS Porkbun service user" ddns-porkbun
         log_success "User 'ddns-porkbun' created successfully"
     else
-        log_info "User 'ddns-porkbun' already exists"
+        log_skip "User 'ddns-porkbun' already exists"
     fi
 }
 
@@ -263,7 +268,7 @@ EOF
 
         log_success ".env file created successfully"
     else
-        log_info ".env file already exists"
+        log_skip ".env file already exists"
     fi
 }
 
@@ -349,7 +354,7 @@ EOF
 
         log_success "Configuration file created successfully"
     else
-        log_info "Configuration file already exists"
+        log_skip "Configuration file already exists"
         log_warning "Review https://github.com/StafLoker/ddns-porkbun-script for configuration changes and update if necessary"
     fi
 }
@@ -365,7 +370,11 @@ configure_logging() {
 
     # Configure logrotate
     log_info "Configuring log rotation..."
-    cat > "/etc/logrotate.d/$SERVICE_NAME" <<EOF
+
+    if [[ -f "/etc/logrotate.d/$SERVICE_NAME" ]]; then
+        log_skip "Log rotation already configured"
+    else
+        cat > "/etc/logrotate.d/$SERVICE_NAME" <<EOF
 $LOG_FILE {
     daily
     missingok
@@ -379,6 +388,8 @@ $LOG_FILE {
     endscript
 }
 EOF
+        log_success "Log rotation configured"
+    fi
 
     log_success "Logging system configured"
 }
@@ -389,7 +400,7 @@ create_systemd_service() {
 
     # Check if service already exists (upgrade scenario)
     if [[ -f "/etc/systemd/system/$SERVICE_NAME.service" ]] && [[ -f "/etc/systemd/system/$SERVICE_NAME.timer" ]]; then
-        log_info "Systemd service and timer already exist (upgrade mode)"
+        log_skip "Systemd service and timer already exist"
         log_info "Reloading systemd daemon..."
         systemctl daemon-reload
         systemctl restart "$SERVICE_NAME.timer"
