@@ -112,10 +112,10 @@ sudo journalctl -t ddns-porkbun
 
 ```bash
 # Edit main configuration
-sudo nano /etc/ddns-porkbun/config.yaml
+sudo vim /etc/ddns-porkbun/config.yaml
 
 # Edit API keys
-sudo nano /etc/ddns-porkbun/.env
+sudo vim /etc/ddns-porkbun/.env
 
 # Restart after config changes
 sudo systemctl restart ddns-porkbun.timer
@@ -159,160 +159,7 @@ sudo systemctl restart ddns-porkbun.timer
 
 ---
 
-## **Manual Installation**
-
-If you prefer manual installation or need to customize the setup:
-
-### **1. Download and Extract:**
-
-```bash
-# Create installation directory
-sudo mkdir -p /opt/ddns-porkbun
-
-# Download latest release
-VERSION=$(curl -s https://api.github.com/repos/StafLoker/ddns-porkbun-script/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-sudo wget -P /opt/ddns-porkbun "https://github.com/StafLoker/ddns-porkbun-script/archive/refs/tags/${VERSION}.tar.gz"
-sudo tar -xzf "/opt/ddns-porkbun/${VERSION}.tar.gz" -C /opt/ddns-porkbun
-sudo mv /opt/ddns-porkbun/ddns-porkbun-script-${VERSION#v}/* /opt/ddns-porkbun/
-sudo rm -rf "/opt/ddns-porkbun/ddns-porkbun-script-${VERSION#v}" "/opt/ddns-porkbun/${VERSION}.tar.gz"
-```
-
-### **2. Install Dependencies:**
-
-```bash
-# Install basic packages
-sudo apt update
-sudo apt install -y curl wget jq sed tar
-
-# Install yq (mikefarah/yq) with architecture detection
-ARCH=$(uname -m)
-YQ_VERSION="v4.45.4"
-
-case $ARCH in
-    x86_64)
-        YQ_BINARY="yq_linux_amd64"
-        ;;
-    aarch64|arm64)
-        YQ_BINARY="yq_linux_arm64"
-        ;;
-    armv7l|armv6l)
-        YQ_BINARY="yq_linux_arm"
-        ;;
-    i386|i686)
-        YQ_BINARY="yq_linux_386"
-        ;;
-    *)
-        echo "Unsupported architecture: $ARCH"
-        exit 1
-        ;;
-esac
-
-sudo wget -O /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/${YQ_BINARY}"
-sudo chmod +x /usr/local/bin/yq
-```
-
-### **3. Create System User:**
-
-```bash
-sudo useradd -r -s /bin/false -d /nonexistent -c "DDNS Porkbun service user" ddns-porkbun
-```
-
-### **4. Set Up Configuration:**
-
-```bash
-# Create configuration directory
-sudo mkdir -p /etc/ddns-porkbun
-sudo chown ddns-porkbun:ddns-porkbun /etc/ddns-porkbun
-sudo chmod 750 /etc/ddns-porkbun
-
-# Create API keys file
-sudo tee /etc/ddns-porkbun/.env > /dev/null <<EOF
-PORKBUN_API_KEY="your_api_key_here"
-PORKBUN_SECRET_API_KEY="your_secret_key_here"
-EOF
-
-sudo chown ddns-porkbun:ddns-porkbun /etc/ddns-porkbun/.env
-sudo chmod 600 /etc/ddns-porkbun/.env
-
-# Create configuration file
-sudo tee /etc/ddns-porkbun/config.yaml > /dev/null <<EOF
-domain: 'example.com'
-concurrency: true
-ipv4:
-  enable: true
-  subdomains:
-    - 'www'
-    - 'mail'
-ipv6:
-  enable: false
-  subdomains:
-EOF
-
-sudo chown ddns-porkbun:ddns-porkbun /etc/ddns-porkbun/config.yaml
-sudo chmod 640 /etc/ddns-porkbun/config.yaml
-```
-
-### **5. Update Script Paths:**
-
-```bash
-sudo chmod +x /opt/ddns-porkbun/ddns-porkbun-script.sh
-sudo ln -sf /opt/ddns-porkbun/ddns-porkbun-script.sh /usr/local/bin/ddns-porkbun
-```
-
-### **6. Create Systemd Service:**
-
-```bash
-# Create service file
-sudo tee /etc/systemd/system/ddns-porkbun.service > /dev/null <<EOF
-[Unit]
-Description=DDNS Porkbun Update Service
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/ddns-porkbun
-User=ddns-porkbun
-Group=ddns-porkbun
-StandardOutput=append:/var/log/ddns-porkbun.log
-StandardError=append:/var/log/ddns-porkbun.log
-TimeoutStartSec=300
-WorkingDirectory=/opt/ddns-porkbun
-EnvironmentFile=-/etc/ddns-porkbun/.env
-
-# Security settings
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=/var/log/ddns-porkbun.log /etc/ddns-porkbun
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Create timer file
-sudo tee /etc/systemd/system/ddns-porkbun.timer > /dev/null <<EOF
-[Unit]
-Description=Run DDNS Porkbun update every 15min
-Requires=ddns-porkbun.service
-
-[Timer]
-OnBootSec=2min
-OnUnitActiveSec=15min
-RandomizedDelaySec=30
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-EOF
-
-# Enable and start
-sudo systemctl daemon-reload
-sudo systemctl enable --now ddns-porkbun.timer
-```
-
-### **7. Set Up Logging:**
+## **Set Up Logging:**
 
 ```bash
 # Create log file
