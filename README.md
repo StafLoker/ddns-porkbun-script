@@ -159,33 +159,6 @@ sudo systemctl restart ddns-porkbun.timer
 
 ---
 
-## **Set Up Logging:**
-
-```bash
-# Create log file
-sudo touch /var/log/ddns-porkbun.log
-sudo chown ddns-porkbun:ddns-porkbun /var/log/ddns-porkbun.log
-sudo chmod 644 /var/log/ddns-porkbun.log
-
-# Configure log rotation
-sudo tee /etc/logrotate.d/ddns-porkbun > /dev/null <<EOF
-/var/log/ddns-porkbun.log {
-    daily
-    missingok
-    rotate 14
-    compress
-    delaycompress
-    notifempty
-    create 644 ddns-porkbun ddns-porkbun
-    postrotate
-        systemctl reload-or-restart ddns-porkbun.service >/dev/null 2>&1 || true
-    endscript
-}
-EOF
-```
-
----
-
 ## **Troubleshooting**
 
 ### **Common Issues:**

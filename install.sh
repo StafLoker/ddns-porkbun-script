@@ -350,6 +350,7 @@ EOF
         log_success "Configuration file created successfully"
     else
         log_info "Configuration file already exists"
+        log_warning "Review https://github.com/StafLoker/ddns-porkbun-script for configuration changes and update if necessary"
     fi
 }
 
@@ -384,7 +385,17 @@ EOF
 
 # Function to create systemd service and timer
 create_systemd_service() {
-    log_info "Creating systemd service and timer..."
+    log_info "Configuring systemd service and timer..."
+
+    # Check if service already exists (upgrade scenario)
+    if [[ -f "/etc/systemd/system/$SERVICE_NAME.service" ]] && [[ -f "/etc/systemd/system/$SERVICE_NAME.timer" ]]; then
+        log_info "Systemd service and timer already exist (upgrade mode)"
+        log_info "Reloading systemd daemon..."
+        systemctl daemon-reload
+        systemctl restart "$SERVICE_NAME.timer"
+        log_success "Service reloaded successfully"
+        return 0
+    fi
 
     # Create service file
     cat > "/etc/systemd/system/$SERVICE_NAME.service" <<EOF
