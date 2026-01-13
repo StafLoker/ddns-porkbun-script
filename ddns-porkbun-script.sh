@@ -70,6 +70,8 @@ get_public_ipv6() {
 # Function to retrieve the current IP for a subdomain
 get_current_ip_dns_record() {
   local subdomain=$1 type=$2
+  # Convert "@" to empty string for root domain (API expects trailing slash)
+  [[ "$subdomain" == "@" ]] && subdomain=""
   response=$(curl -s -X POST "$RETRIEVE_RECORD_URL/$type/$subdomain" \
     -H "Content-Type: application/json" \
     -d "{\"apikey\":\"$PORKBUN_API_KEY\",\"secretapikey\":\"$PORKBUN_SECRET_API_KEY\"}")
@@ -79,6 +81,8 @@ get_current_ip_dns_record() {
 # Function to update the DNS record
 update_dns_record() {
   local subdomain=$1 ip=$2 type=$3
+  # Convert "@" to empty string for root domain (API expects trailing slash)
+  [[ "$subdomain" == "@" ]] && subdomain=""
   response=$(curl -s -X POST "$UPDATE_RECORD_URL/$type/$subdomain" \
     -H "Content-Type: application/json" \
     -d "{\"apikey\":\"$PORKBUN_API_KEY\",\"secretapikey\":\"$PORKBUN_SECRET_API_KEY\",\"content\":\"$ip\"}")
