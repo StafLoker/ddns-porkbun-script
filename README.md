@@ -7,7 +7,6 @@
 </div>
 
 <div align="center">
-   <a href="https://github.com/StafLoker/ddns-porkbun-script/releases"><img src="https://img.shields.io/github/downloads/StafLoker/ddns-porkbun-script/total.svg?style=flat" alt="downloads"/></a>
    <a href="https://github.com/StafLoker/ddns-porkbun-script/releases"><img src="https://img.shields.io/github/release-pre/StafLoker/ddns-porkbun-script.svg?style=flat" alt="latest version"/></a>
    <a href="https://github.com/StafLoker/ddns-porkbun-script/blob/main/LICENSE"><img src="https://img.shields.io/github/license/StafLoker/ddns-porkbun-script.svg?style=flat" alt="license"/></a>
 
